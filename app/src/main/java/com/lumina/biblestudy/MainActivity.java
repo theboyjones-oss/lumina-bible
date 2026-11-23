@@ -1,7 +1,10 @@
 package com.lumina.biblestudy;
 
 import android.annotation.SuppressLint;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -35,17 +38,7 @@ import androidx.webkit.WebViewClientCompat;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Set;
@@ -63,9 +56,6 @@ public class MainActivity extends ComponentActivity {
     private ActivityResultLauncher<Intent> filePicker;
     private ActivityResultLauncher<String> saveDoc;
     private String pendingSaveText;
-
-    private final ExecutorService net = Executors.newFixedThreadPool(3);
-    private final Map<String, byte[]> geminiResults = new ConcurrentHashMap<>();
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -120,16 +110,7 @@ public class MainActivity extends ComponentActivity {
         webView.setWebViewClient(new WebViewClientCompat() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                Uri u = request.getUrl();
-                String path = u.getPath();
-                if ("appassets.androidplatform.net".equals(u.getHost()) && path != null && path.startsWith("/__gemini/")) {
-                    byte[] body = geminiResults.remove(path.substring("/__gemini/".length()));
-                    if (body == null) body = "{}".getBytes(StandardCharsets.UTF_8);
-                    Map<String, String> h = new HashMap<>();
-                    h.put("Cache-Control", "no-store");
-                    return new WebResourceResponse("application/json", "utf-8", 200, "OK", h, new ByteArrayInputStream(body));
-                }
-                return loader.shouldInterceptRequest(u);
+                return loader.shouldInterceptRequest(request.getUrl());
             }
 
             @Override
@@ -163,7 +144,6 @@ public class MainActivity extends ComponentActivity {
 
         webView.addJavascriptInterface(new TtsBridge(), "AndroidTTS");
         webView.addJavascriptInterface(new AppBridge(), "AndroidBridge");
-        webView.addJavascriptInterface(new GeminiBridge(), "AndroidGemini");
     }
 
     private void setupLaunchers() {
@@ -254,6 +234,29 @@ public class MainActivity extends ComponentActivity {
         }
 
         @JavascriptInterface
+        public void silence(long ms) {
+            if (ttsReady && ms > 0) tts.playSilentUtterance(ms, TextToSpeech.QUEUE_ADD, "sil" + System.nanoTime());
+        }
+
+        @JavascriptInterface
+        public String getEngineInfo() {
+            JSONObject o = new JSONObject();
+            try {
+                String engine = tts != null ? tts.getDefaultEngine() : "";
+                o.put("ready", ttsReady);
+                o.put("engine", engine == null ? "" : engine);
+                String label = engine;
+                try {
+                    PackageManager pm = getPackageManager();
+                    ApplicationInfo ai = pm.getApplicationInfo(engine, 0);
+                    label = String.valueOf(pm.getApplicationLabel(ai));
+                } catch (Exception ignored) { }
+                o.put("label", label == null ? "" : label);
+            } catch (Exception ignored) { }
+            return o.toString();
+        }
+
+        @JavascriptInterface
         public void stop() {
             if (tts != null) tts.stop();
         }
@@ -273,6 +276,7 @@ public class MainActivity extends ComponentActivity {
                     o.put("lang", v.getLocale().toLanguageTag());
                     o.put("localService", !v.isNetworkConnectionRequired());
                     o.put("default", def != null && def.getName().equals(v.getName()));
+                    o.put("quality", v.getQuality());
                     arr.put(o);
                 }
             } catch (Exception ignored) { }
@@ -280,59 +284,7 @@ public class MainActivity extends ComponentActivity {
         }
     }
 
-    /* ---------------- Gemini TTS requests via native networking ---------------- */
-
-    private class GeminiBridge {
-        @JavascriptInterface
-        public void post(String id, String model, String key, String body) {
-            net.execute(() -> {
-                int status;
-                byte[] out;
-                HttpURLConnection c = null;
-                try {
-                    URL url = new URL("https://generativelanguage.googleapis.com/v1beta/models/"
-                            + Uri.encode(model) + ":generateContent");
-                    c = (HttpURLConnection) url.openConnection();
-                    c.setRequestMethod("POST");
-                    c.setConnectTimeout(20000);
-                    c.setReadTimeout(90000);
-                    c.setDoOutput(true);
-                    c.setRequestProperty("Content-Type", "application/json");
-                    c.setRequestProperty("x-goog-api-key", key == null ? "" : key);
-                    try (OutputStream os = c.getOutputStream()) {
-                        os.write(body.getBytes(StandardCharsets.UTF_8));
-                    }
-                    status = c.getResponseCode();
-                    InputStream in = status >= 400 ? c.getErrorStream() : c.getInputStream();
-                    out = readAll(in);
-                } catch (Exception e) {
-                    status = 0;
-                    out = ("{\"error\":{\"message\":" + JSONObject.quote("Network error: " + e.getMessage()) + "}}")
-                            .getBytes(StandardCharsets.UTF_8);
-                } finally {
-                    if (c != null) c.disconnect();
-                }
-                geminiResults.put(id, out);
-                final int st = status;
-                runOnUiThread(() -> {
-                    if (webView != null) webView.evaluateJavascript(
-                            "window.__luminaGeminiDone && window.__luminaGeminiDone(" + JSONObject.quote(id) + "," + st + ")", null);
-                });
-            });
-        }
-    }
-
-    private static byte[] readAll(InputStream in) throws java.io.IOException {
-        if (in == null) return "{}".getBytes(StandardCharsets.UTF_8);
-        try (InputStream is = in; ByteArrayOutputStream bo = new ByteArrayOutputStream()) {
-            byte[] buf = new byte[16384];
-            int n;
-            while ((n = is.read(buf)) != -1) bo.write(buf, 0, n);
-            return bo.toByteArray();
-        }
-    }
-
-    /* ---------------- App bridge (theme, file save, key, keep-awake) ---------------- */
+    /* ---------------- App bridge (theme, file save, voices, keep-awake) ---------------- */
 
     private class AppBridge {
         @JavascriptInterface
@@ -341,8 +293,25 @@ public class MainActivity extends ComponentActivity {
         }
 
         @JavascriptInterface
-        public String getBuiltInKey() {
-            return BuildConfig.GEMINI_API_KEY;
+        public void openVoiceSettings() {
+            runOnUiThread(() -> {
+                // Prefer the engine's own "install voice data" screen, then system TTS settings
+                Intent install = new Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
+                String engine = tts != null ? tts.getDefaultEngine() : null;
+                if (engine != null) install.setPackage(engine);
+                if (tryStart(install)) return;
+                if (tryStart(new Intent("com.android.settings.TTS_SETTINGS"))) return;
+                tryStart(new Intent(android.provider.Settings.ACTION_SETTINGS));
+            });
+        }
+
+        @JavascriptInterface
+        public void openPlayStore(String pkg) {
+            runOnUiThread(() -> {
+                if (!tryStart(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + pkg)))) {
+                    tryStart(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=" + pkg)));
+                }
+            });
         }
 
         @JavascriptInterface
@@ -359,6 +328,16 @@ public class MainActivity extends ComponentActivity {
                 pendingSaveText = text;
                 saveDoc.launch(name);
             });
+        }
+    }
+
+    private boolean tryStart(Intent i) {
+        try {
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(i);
+            return true;
+        } catch (ActivityNotFoundException | SecurityException e) {
+            return false;
         }
     }
 
@@ -383,7 +362,6 @@ public class MainActivity extends ComponentActivity {
     @Override
     protected void onDestroy() {
         if (tts != null) { tts.stop(); tts.shutdown(); }
-        net.shutdownNow();
         if (webView != null) { webView.destroy(); webView = null; }
         super.onDestroy();
     }

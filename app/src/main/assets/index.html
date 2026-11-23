@@ -911,9 +911,6 @@
 </head>
 <body>
 
-  <!-- Hidden Fallback HTML Audio Element if Web Audio Fails -->
-  <audio id="ttsFallbackAudio" playsinline preload="auto" class="hidden"></audio>
-
   <!-- =========================================================================
        1. STICKY TOP HEADER (Pre-Rendered for Instant First Paint)
        ========================================================================= -->
@@ -1051,7 +1048,7 @@
 
         <div class="audio-meta">
           <div id="audioL1" class="audio-l1">Ready to read John 3</div>
-          <div id="audioL2" class="audio-l2">AI Voice (Charon) • Smooth Flow</div>
+          <div id="audioL2" class="audio-l2">Device voice • Continuous</div>
         </div>
       </div>
 
@@ -1105,64 +1102,50 @@
   <div id="voiceModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="voiceModalTitle">
     <div class="modal-box">
       <div class="modal-head">
-        <h2 id="voiceModalTitle">AI Voice &amp; Audio Settings</h2>
+        <h2 id="voiceModalTitle">Reading Voice</h2>
         <button id="btnCloseVoiceModal" type="button" class="close-btn" aria-label="Close">&times;</button>
       </div>
       <div class="modal-body">
         <div>
-          <div class="lbl"><span>Voice Engine</span></div>
-          <div id="engineGroup" class="grid-2">
-            <button type="button" data-engine="ai" class="seg-btn is-active">AI Voice (Gemini)</button>
-            <button type="button" data-engine="browser" class="seg-btn">Device Voice (Offline)</button>
-          </div>
-        </div>
-
-        <div>
-          <label for="selAiVoice" class="lbl"><span>AI Voice Persona</span></label>
-          <select id="selAiVoice" class="ctrl-select" style="width:100%;">
-            <option value="Charon">Charon — Deep &amp; Reverent</option>
-            <option value="Kore">Kore — Warm &amp; Clear</option>
-            <option value="Aoede">Aoede — Gentle &amp; Lyrical</option>
-            <option value="Fenrir">Fenrir — Rich &amp; Dramatic</option>
-            <option value="Puck">Puck — Bright &amp; Expressive</option>
-            <option value="Gacrux">Gacrux — Mature &amp; Steady</option>
-            <option value="Sulafat">Sulafat — Warm</option>
-            <option value="Vindemiatrix">Vindemiatrix — Gentle</option>
-            <option value="Achernar">Achernar — Soft</option>
-            <option value="Algieba">Algieba — Smooth</option>
-            <option value="Iapetus">Iapetus — Clear</option>
-            <option value="Sadaltager">Sadaltager — Knowledgeable</option>
-            <option value="Orus">Orus — Firm</option>
+          <label for="selVoice" class="lbl"><span>Voice</span></label>
+          <select id="selVoice" class="ctrl-select" style="width:100%;">
+            <option value="">Auto — best English voice</option>
           </select>
+          <div class="grid-2" style="margin-top:8px;">
+            <button id="btnPreviewVoice" type="button" class="seg-btn">&#9654; Preview</button>
+            <button id="btnMoreVoices" type="button" class="seg-btn">More voices&hellip;</button>
+          </div>
         </div>
 
         <div class="grid-2">
           <div>
-            <label for="selAiStyle" class="lbl"><span>Narration Style</span></label>
-            <select id="selAiStyle" class="ctrl-select" style="width:100%;">
-              <option value="reverent">Reverent &amp; Calm</option>
-              <option value="storytelling">Warm Storytelling</option>
-              <option value="study">Clear Study Pace</option>
+            <label for="selModalSpeed" class="lbl"><span>Speed</span></label>
+            <select id="selModalSpeed" class="ctrl-select" style="width:100%;">
+              <option value="0.75">0.75x</option>
+              <option value="0.9">0.9x</option>
+              <option value="1" selected>1.0x</option>
+              <option value="1.15">1.15x</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x</option>
             </select>
           </div>
           <div>
-            <label for="selFlowMode" class="lbl"><span>Flow Mode</span></label>
-            <select id="selFlowMode" class="ctrl-select" style="width:100%;">
-              <option value="smooth">Smooth Flow (Continuous)</option>
-              <option value="verse">Study Pause (Verse-by-Verse)</option>
+            <label for="selPitch" class="lbl"><span>Tone</span></label>
+            <select id="selPitch" class="ctrl-select" style="width:100%;">
+              <option value="0.85">Deeper</option>
+              <option value="0.95">Slightly deeper</option>
+              <option value="1" selected>Natural</option>
+              <option value="1.05">Slightly brighter</option>
+              <option value="1.15">Brighter</option>
             </select>
           </div>
         </div>
 
         <div>
-          <label for="selModalSpeed" class="lbl"><span>Playback Speed</span></label>
-          <select id="selModalSpeed" class="ctrl-select" style="width:100%;">
-            <option value="0.75">0.75x</option>
-            <option value="0.9">0.9x</option>
-            <option value="1" selected>1.0x</option>
-            <option value="1.15">1.15x</option>
-            <option value="1.25">1.25x</option>
-            <option value="1.5">1.5x</option>
+          <label for="selFlowMode" class="lbl"><span>Reading Flow</span></label>
+          <select id="selFlowMode" class="ctrl-select" style="width:100%;">
+            <option value="smooth">Continuous</option>
+            <option value="verse">Short pause between verses</option>
           </select>
         </div>
 
@@ -1171,33 +1154,10 @@
           <input id="chkAutoNext" type="checkbox" checked />
         </label>
 
-        <div>
-          <label for="selBrowserVoice" class="lbl"><span>Device Voice</span></label>
-          <select id="selBrowserVoice" class="ctrl-select" style="width:100%;">
-            <option value="">Auto (Best Natural English Voice)</option>
-          </select>
-        </div>
-
-        <!-- Live Voice Test & Diagnostics -->
         <div class="diag-box">
-          <div class="diag-row">
-            <span style="font-size:12px;font-weight:700;">Voice Diagnostics</span>
-            <div style="display:flex;gap:6px;">
-              <button id="btnTestAiVoice" type="button" class="mini-btn is-acc">Test AI Voice</button>
-              <button id="btnTestBrowserVoice" type="button" class="mini-btn">Test Device</button>
-            </div>
-          </div>
-          <div id="voiceDiagStatus" class="diag-status">Tap "Test AI Voice" to verify Gemini TTS playback.</div>
+          <div id="voiceDiagStatus" class="diag-status">Loading voices…</div>
+          <button id="btnGetGoogleVoices" type="button" class="mini-btn is-acc hidden">Get Speech Services by Google</button>
         </div>
-
-        <details class="key-details">
-          <summary>Gemini API Key (for AI Voice)</summary>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.45;">Get a free key at <a href="https://aistudio.google.com/apikey" style="color:var(--accent-hi);">aistudio.google.com/apikey</a>, then paste it here. It's stored only on this phone.</div>
-          <div style="display:flex;gap:6px;">
-            <input id="inpCustomKey" type="password" class="text-input" placeholder="Paste Gemini API key..." autocomplete="off" />
-            <button id="btnClearCustomKey" type="button" class="mini-btn" style="flex-shrink:0;">Clear</button>
-          </div>
-        </details>
       </div>
       <div class="modal-foot">
         <button id="btnDoneVoiceModal" type="button" class="primary-btn">Done</button>
@@ -1300,11 +1260,8 @@
 
   <!-- =========================================================================
        APPLICATION SCRIPT
-       CRITICAL: Top-level global `const apiKey = "";` for Canvas runtime injection
        ========================================================================= -->
   <script>
-    const apiKey = (window.AndroidBridge && window.AndroidBridge.getBuiltInKey) ? String(window.AndroidBridge.getBuiltInKey() || "") : "";
-
     (function () {
       'use strict';
 
@@ -1328,12 +1285,7 @@
 
       const STORE_KEY = 'lumina_bible_state_v12';
       const CACHE_KEY = 'lumina_bible_cache_v12';
-      const CUSTOM_KEY_STORE = 'lumina_custom_gemini_api_key';
       const $ = (id) => document.getElementById(id);
-
-      function getCustomApiKey() {
-        return (safeGet(CUSTOM_KEY_STORE) || '').trim();
-      }
 
       /* -----------------------------------------------------------------------
          2. 66 BOOKS METADATA, BUILT-IN OFFLINE PASSAGES & READING PLANS
@@ -1521,12 +1473,6 @@
         { val: 2.05, label: 'Spacious (2.05)' }
       ];
 
-      const STYLE_PROMPTS = {
-        reverent: 'Read calmly and reverently: ',
-        storytelling: 'Read warmly with gentle storytelling expression: ',
-        study: 'Read clearly at a steady study pace: '
-      };
-
       /* -----------------------------------------------------------------------
          3. APPLICATION STATE & HELPERS
          ----------------------------------------------------------------------- */
@@ -1542,13 +1488,11 @@
         notes: {},
         bookmarks: {},
         planDone: {},
-        voiceEngine: 'ai',
-        aiVoice: 'Charon',
-        aiStyle: 'reverent',
         flowMode: 'smooth',
         speed: 1.0,
+        pitch: 1.0,
         autoNext: true,
-        browserVoice: ''
+        voice: ''
       };
 
       let state = Object.assign({}, DEFAULTS);
@@ -1557,7 +1501,7 @@
         if (saved && typeof saved === 'object') {
           state = Object.assign({}, DEFAULTS, saved);
         }
-        if (state.voiceEngine !== 'ai' && state.voiceEngine !== 'browser') state.voiceEngine = 'ai';
+        ['voiceEngine', 'aiVoice', 'aiStyle', 'browserVoice'].forEach((k) => { delete state[k]; });
         if (!state.planDone || typeof state.planDone !== 'object') state.planDone = {};
       } catch (e) {}
 
@@ -1673,36 +1617,20 @@
       }
 
       /* -----------------------------------------------------------------------
-         4. GAPLESS WEB AUDIO GEMINI AI VOICE ENGINE + HTML AUDIO & BROWSER FALLBACK
+         4. READ-ALOUD ENGINE
+            Android: native TextToSpeech (Speech Services by Google neural voices)
+            Desktop browsers: Web Speech API
+            Free, no API key, unlimited, works offline with downloaded voices.
          ----------------------------------------------------------------------- */
-      const ttsFallbackAudio = $('ttsFallbackAudio');
-      const audioBufferCache = new Map(); // cacheKey -> { audioBuffer, wavBlobUrl, sampleRate }
-      const audioInflight = new Map();
-      let audioCtx = null;
-      let sysVoices = [];
-      let activeUtterance = null;
-      let syncRafId = null;
-      let testSourceNode = null;
-
+      const NATIVE = !!window.AndroidTTS;
       const audio = {
-        status: 'idle',        // idle | loading | playing | paused
+        status: 'idle',   // idle | loading | playing | paused
         token: 0,
-        activeEngine: 'ai',    // ai | browser
-        useHtmlAudio: false,   // true only if Web Audio fails on this browser
-        chunks: [],
-        chunkIdx: 0,
         verseIdx: -1,
-        fallbackActive: false,
-        // Gapless Web Audio scheduling state
-        scheduled: [],         // [{ chunkIdx, chunk, source, buffer, startCtxTime, endCtxTime, offsetSec, rate }]
-        nextStartTime: 0,
-        nextToSchedule: 0,
-        pausedChunkIdx: 0,
-        pausedOffsetSec: 0,
-        // Browser speech queue
-        browserQueue: [],
-        browserQueueIdx: 0
+        queue: []         // keep utterance references alive (prevents GC dropping events)
       };
+      let voiceList = [];
+      const voiceLabels = {};
 
       function sanitizeText(str) {
         return String(str || '')
@@ -1711,777 +1639,227 @@
           .trim();
       }
 
-      // Synchronously create/resume AudioContext and trigger silent buffer inside user gesture
-      function unlockAudioContext() {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        if (!AC) return null;
-        try {
-          if (!audioCtx || audioCtx.state === 'closed') {
-            audioCtx = new AC();
-          }
-          if (audioCtx.state === 'suspended') {
-            audioCtx.resume().catch(() => {});
-          }
-          const silent = audioCtx.createBuffer(1, 1, audioCtx.sampleRate || 24000);
-          const src = audioCtx.createBufferSource();
-          src.buffer = silent;
-          src.connect(audioCtx.destination);
-          src.start(0);
-          return audioCtx;
-        } catch (e) {
-          return null;
-        }
+      function hasSpeech() {
+        return ('speechSynthesis' in window) && typeof window.SpeechSynthesisUtterance !== 'undefined';
       }
 
-      function base64ToUint8(b64) {
-        const clean = String(b64 || '').replace(/\s+/g, '');
-        const bin = atob(clean);
-        const bytes = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        return bytes;
+      function isHdVoice(v) {
+        return (typeof v.quality === 'number' && v.quality >= 400) ||
+          /neural|natural|enhanced|premium|wavenet/i.test(v.name || '');
       }
 
-      // Trim leading/trailing silence down to ~45ms breath pad + 8ms linear anti-click fades
-      function trimAndFadeFloat32(samples, sampleRate) {
-        const threshold = 0.011; // ~360 / 32768
-        let first = -1;
-        let last = -1;
-        for (let i = 0; i < samples.length; i++) {
-          if (Math.abs(samples[i]) >= threshold) {
-            if (first === -1) first = i;
-            last = i;
-          }
-        }
-
-        let trimmed;
-        if (first !== -1 && last > first) {
-          const pad = Math.floor(sampleRate * 0.045);
-          const s = Math.max(0, first - pad);
-          const e = Math.min(samples.length, last + pad);
-          trimmed = samples.slice(s, e);
-        } else {
-          trimmed = samples.slice();
-        }
-
-        const fadeLen = Math.min(Math.floor(sampleRate * 0.008), Math.floor(trimmed.length / 4));
-        for (let i = 0; i < fadeLen; i++) {
-          const gain = i / fadeLen;
-          trimmed[i] *= gain;
-          trimmed[trimmed.length - 1 - i] *= gain;
-        }
-        return trimmed;
+      function scoreVoice(v) {
+        let s = 0;
+        const l = String(v.lang || '').toLowerCase().replace('_', '-');
+        const n = String(v.name || '').toLowerCase();
+        if (l.startsWith('en-gb')) s += 60;
+        else if (l.startsWith('en-us')) s += 50;
+        else if (l.startsWith('en')) s += 30;
+        if (typeof v.quality === 'number') s += Math.min(500, v.quality) / 10;
+        if (isHdVoice(v)) s += 20;
+        if (/natural|neural|online|google/.test(n)) s += 10;
+        if (v.localService) s += 5;
+        if (/compact|espeak/.test(n)) s -= 40;
+        return s;
       }
 
-      // Build standard 44-byte RIFF/WAVE Blob from Float32 mono samples (for <audio> fallback)
-      function encodeFloat32ToWavBlobUrl(samples, sampleRate) {
-        const dataLen = samples.length * 2;
-        const buf = new ArrayBuffer(44 + dataLen);
-        const view = new DataView(buf);
-        const writeStr = (off, s) => {
-          for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i));
+      function regionName(lang) {
+        const map = {
+          'en-gb': 'English (UK)', 'en-us': 'English (US)', 'en-au': 'English (Australia)',
+          'en-in': 'English (India)', 'en-ie': 'English (Ireland)', 'en-ca': 'English (Canada)',
+          'en-za': 'English (South Africa)', 'en-ng': 'English (Nigeria)', 'en-nz': 'English (New Zealand)'
         };
-        writeStr(0, 'RIFF');
-        view.setUint32(4, 36 + dataLen, true);
-        writeStr(8, 'WAVE');
-        writeStr(12, 'fmt ');
-        view.setUint32(16, 16, true);
-        view.setUint16(20, 1, true); // PCM
-        view.setUint16(22, 1, true); // Mono
-        view.setUint32(24, sampleRate, true);
-        view.setUint32(28, sampleRate * 2, true);
-        view.setUint16(32, 2, true);
-        view.setUint16(34, 16, true);
-        writeStr(36, 'data');
-        view.setUint32(40, dataLen, true);
-
-        let off = 44;
-        for (let i = 0; i < samples.length; i++) {
-          const clamped = Math.max(-1, Math.min(1, samples[i]));
-          view.setInt16(off, clamped < 0 ? Math.round(clamped * 32768) : Math.round(clamped * 32767), true);
-          off += 2;
-        }
-        return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+        const k = String(lang || '').toLowerCase().replace('_', '-').slice(0, 5);
+        return map[k] || (lang || 'Other');
       }
 
-      // Decode Gemini inline audio (supports both RIFF WAV and headerless 16-bit LE PCM)
-      async function decodeGeminiInlineAudio(base64Data, mimeType) {
-        const bytes = base64ToUint8(base64Data);
-        if (bytes.length < 4) throw new Error('Empty audio payload from Gemini');
+      function listVoices() {
+        if (!hasSpeech()) return [];
+        const raw = window.speechSynthesis.getVoices() || [];
+        const en = raw.filter((v) => /^en/i.test(v.lang || ''));
+        voiceList = (en.length ? en : raw).slice().sort((a, b) => scoreVoice(b) - scoreVoice(a));
+        return voiceList;
+      }
 
-        const mime = String(mimeType || '');
-        const rateMatch = mime.match(/rate=(\d+)/i);
-        let sampleRate = rateMatch ? parseInt(rateMatch[1], 10) : 24000;
-        const isRiff = bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46;
-
-        const ctx = unlockAudioContext();
-        let floatSamples = null;
-
-        if (isRiff && ctx) {
-          try {
-            const copyBuf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
-            const rawDecoded = await ctx.decodeAudioData(copyBuf);
-            sampleRate = rawDecoded.sampleRate || sampleRate;
-            floatSamples = rawDecoded.getChannelData(0).slice();
-          } catch (e) {
-            // Fall through to manual RIFF data chunk parsing
-          }
+      function chosenVoice() {
+        const list = voiceList.length ? voiceList : listVoices();
+        if (state.voice) {
+          const v = list.find((x) => x.name === state.voice);
+          if (v) return v;
         }
+        return list[0] || null;
+      }
 
-        if (!floatSamples) {
-          let pcmStart = 0;
-          let pcmLen = bytes.byteLength;
-          if (isRiff && bytes.byteLength > 44) {
-            const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-            sampleRate = v.getUint32(24, true) || sampleRate;
-            // Locate "data" subchunk
-            let pos = 12;
-            while (pos + 8 <= bytes.byteLength) {
-              const id = String.fromCharCode(bytes[pos], bytes[pos + 1], bytes[pos + 2], bytes[pos + 3]);
-              const sz = v.getUint32(pos + 4, true);
-              if (id === 'data') {
-                pcmStart = pos + 8;
-                pcmLen = Math.min(sz, bytes.byteLength - pcmStart);
-                break;
-              }
-              pos += 8 + sz;
+      // Android voice ids (e.g. "en-gb-x-gbb-network") become "English (UK) · Voice 2 · HD · Offline"
+      function populateVoices() {
+        const list = listVoices();
+        const groups = {};
+        list.forEach((v) => {
+          const g = regionName(v.lang);
+          (groups[g] = groups[g] || []).push(v);
+        });
+        const rank = (g) => (g === 'English (UK)' ? 0 : g === 'English (US)' ? 1 : 2);
+        const order = Object.keys(groups).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+
+        let html = '<option value="">Auto — best English voice</option>';
+        order.forEach((g) => {
+          const vs = groups[g].slice().sort((a, b) => a.name.localeCompare(b.name));
+          html += `<optgroup label="${esc(g)}">`;
+          vs.forEach((v, i) => {
+            let label;
+            if (NATIVE) {
+              const bits = [`Voice ${i + 1}`];
+              if (isHdVoice(v)) bits.push('HD');
+              bits.push(v.localService ? 'Offline' : 'Online');
+              label = bits.join(' · ');
+              voiceLabels[v.name] = `${g} · Voice ${i + 1}${isHdVoice(v) ? ' HD' : ''}`;
+            } else {
+              label = v.name;
+              voiceLabels[v.name] = v.name.replace(/^(Microsoft|Google)\s+/, '');
             }
-          }
-          const sampleCount = Math.floor(pcmLen / 2);
-          const view = new DataView(bytes.buffer, bytes.byteOffset + pcmStart, sampleCount * 2);
-          floatSamples = new Float32Array(sampleCount);
-          for (let i = 0; i < sampleCount; i++) {
-            floatSamples[i] = view.getInt16(i * 2, true) / 32768.0;
-          }
-        }
+            html += `<option value="${esc(v.name)}">${esc(label)}</option>`;
+          });
+          html += '</optgroup>';
+        });
 
-        const cleaned = trimAndFadeFloat32(floatSamples, sampleRate);
-        let audioBuffer = null;
-        if (ctx) {
-          try {
-            audioBuffer = ctx.createBuffer(1, cleaned.length, sampleRate);
-            audioBuffer.copyToChannel(cleaned, 0);
-          } catch (e) {
-            audioBuffer = null;
-          }
+        const sel = $('selVoice');
+        if (sel) {
+          sel.innerHTML = html;
+          sel.value = list.some((v) => v.name === state.voice) ? state.voice : '';
         }
-        const wavBlobUrl = encodeFloat32ToWavBlobUrl(cleaned, sampleRate);
-
-        return { audioBuffer, wavBlobUrl, sampleRate };
+        updateEngineInfo();
+        updateAudioUI();
       }
 
-      // Punctuation-weighted timing for accurate verse highlighting across multi-verse chunks
-      function calcVerseWeight(text) {
-        const base = Math.max(10, text.length);
-        const pauses = (text.match(/[.!?;]/g) || []).length * 11 + (text.match(/[,:—–]/g) || []).length * 5;
-        return base + pauses;
+      function voiceShortName() {
+        const v = chosenVoice();
+        if (!v) return 'Device voice';
+        const lbl = voiceLabels[v.name] || v.name;
+        return state.voice ? lbl : `Auto · ${lbl}`;
       }
 
-      // Smooth Flow (~350-480 chars breaking cleanly on sentence boundaries, no verse numbers) vs Study Pause
-      function buildChunks(list, startIdx, mode) {
+      function updateEngineInfo() {
+        const getBtn = $('btnGetGoogleVoices');
+        if (!hasSpeech()) {
+          setDiagStatus('Read-aloud is not available on this device.', 'err');
+          return;
+        }
+        const count = voiceList.length;
+        const hd = voiceList.filter(isHdVoice).length;
+        if (NATIVE) {
+          let info = {};
+          try { info = JSON.parse(window.AndroidTTS.getEngineInfo() || '{}'); } catch (e) {}
+          const isGoogle = info.engine === 'com.google.android.tts';
+          if (getBtn) getBtn.classList.toggle('hidden', isGoogle);
+          if (!info.ready) {
+            setDiagStatus('Starting speech engine…');
+          } else if (!count) {
+            setDiagStatus('No English voices installed yet. Tap "More voices…" and install English (UK) voice data.', 'err');
+          } else if (!isGoogle) {
+            setDiagStatus(`Using ${info.label || 'your phone\'s speech engine'} (${count} English voices). For the most natural reading, install Speech Services by Google and set it as the preferred engine.`);
+          } else {
+            setDiagStatus(`Speech Services by Google • ${count} English voices${hd ? ` (${hd} HD)` : ''}. Tip: "More voices…" → Install voice data → English (UK) to download extra voices for offline use.`, 'ok');
+          }
+        } else {
+          if (getBtn) getBtn.classList.add('hidden');
+          setDiagStatus(count ? `${count} English voices available in this browser.` : 'Loading voices…', count ? 'ok' : '');
+        }
+      }
+
+      function splitLong(text) {
+        const limit = NATIVE ? 1500 : 220; // desktop Chrome stalls on long utterances
+        if (text.length <= limit) return [text];
+        const parts = text.match(/[^.!?;:]+[.!?;:]*["”'’)\]]*\s*/g) || [text];
         const out = [];
-        let i = Math.max(0, startIdx);
-        if (mode === 'verse') {
-          while (i < list.length) {
-            const t = sanitizeText(list[i].text);
-            out.push({
-              chunkIndex: out.length,
-              startVerse: list[i].verse,
-              text: t,
-              verses: [{ idx: i, verse: list[i].verse, text: t }],
-              weights: [{ idx: i, s: 0, e: 1 }]
-            });
-            i++;
-          }
-          return out;
-        }
-
-        while (i < list.length) {
-          const slice = [];
-          let chars = 0;
-          while (i < list.length) {
-            const t = sanitizeText(list[i].text);
-            if (slice.length > 0 && (chars + t.length > 480 || slice.length >= 6)) break;
-            slice.push({ idx: i, verse: list[i].verse, text: t });
-            chars += t.length + 1;
-            i++;
-            if (chars >= 350 && /[.!?;]["”'’)\]]*$/.test(t)) break;
-          }
-
-          const rawW = slice.map((v) => calcVerseWeight(v.text));
-          const totalW = rawW.reduce((a, b) => a + b, 0) || 1;
-          let acc = 0;
-          const weights = slice.map((v, k) => {
-            const s = acc / totalW;
-            acc += rawW[k];
-            return { idx: v.idx, s, e: acc / totalW };
-          });
-
-          out.push({
-            chunkIndex: out.length,
-            startVerse: slice[0].verse,
-            text: slice.map((v) => v.text).join(' '),
-            verses: slice,
-            weights
-          });
-        }
+        let buf = '';
+        parts.forEach((p) => {
+          if (buf && (buf.length + p.length) > limit) { out.push(buf.trim()); buf = p; }
+          else buf += p;
+        });
+        if (buf.trim()) out.push(buf.trim());
         return out;
       }
 
-      // Clean Gemini TTS REST call using top-level apiKey (or optional custom key)
-      async function requestGeminiTts(modelName, promptText) {
-        const effectiveKey = getCustomApiKey() || apiKey;
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${effectiveKey}`;
-        const payload = {
-          contents: [{ parts: [{ text: promptText }] }],
-          generationConfig: {
-            responseModalities: ["AUDIO"],
-            speechConfig: {
-              voiceConfig: {
-                prebuiltVoiceConfig: {
-                  voiceName: state.aiVoice || "Charon"
-                }
+      function makeUtterance(text) {
+        const u = new SpeechSynthesisUtterance(text);
+        const v = chosenVoice();
+        if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = 'en-GB'; }
+        u.rate = state.speed || 1;
+        u.pitch = state.pitch || 1;
+        return u;
+      }
+
+      function cancelSpeech() {
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+        audio.queue = [];
+      }
+
+      // Queue the rest of the chapter in one go so reading flows without gaps between verses
+      function startReading(startVerseIdx) {
+        if (!verses.length) return;
+        if (!hasSpeech()) {
+          toast('Read-aloud is not available on this device.');
+          return;
+        }
+        audio.token++;
+        const tok = audio.token;
+        cancelSpeech();
+
+        const from = Math.max(0, Math.min(verses.length - 1, startVerseIdx || 0));
+        audio.verseIdx = from;
+        audio.status = 'loading';
+        highlightSpeaking(true);
+        updateAudioUI();
+
+        const pauseMs = state.flowMode === 'verse' ? 900 : 0;
+        let last = null;
+        for (let i = from; i < verses.length; i++) {
+          const idx = i;
+          splitLong(sanitizeText(verses[i].text)).forEach((part) => {
+            if (!part) return;
+            const u = makeUtterance(part);
+            u.onstart = () => {
+              if (tok !== audio.token) return;
+              audio.status = 'playing';
+              if (audio.verseIdx !== idx) {
+                audio.verseIdx = idx;
+                highlightSpeaking(true);
               }
-            }
-          }
-        };
-
-        const res = (window.luminaNativePost)
-          ? await window.luminaNativePost(modelName, effectiveKey, JSON.stringify(payload))
-          : await fetch(url, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-
-        if (!res.ok) {
-          let errMsg = `HTTP ${res.status}`;
-          try {
-            const errJson = await res.json();
-            if (errJson && errJson.error && errJson.error.message) {
-              errMsg = errJson.error.message;
-            }
-          } catch (e) {}
-          const err = new Error(errMsg);
-          err.status = res.status;
-          throw err;
-        }
-
-        const data = await res.json();
-        const parts = (data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
-        let inline = null;
-        for (let i = 0; i < parts.length; i++) {
-          const p = parts[i];
-          if (p && p.inlineData && p.inlineData.data) {
-            inline = { data: p.inlineData.data, mimeType: p.inlineData.mimeType || '' };
-            break;
-          }
-          if (p && p.inline_data && p.inline_data.data) {
-            inline = { data: p.inline_data.data, mimeType: p.inline_data.mime_type || '' };
-            break;
+              updateAudioUI();
+            };
+            u.onerror = (ev) => {
+              if (tok !== audio.token) return;
+              const code = ev && ev.error ? ev.error : '';
+              if (code === 'canceled' || code === 'interrupted') return;
+              if (u === last) finishChapterAudio(tok);
+            };
+            audio.queue.push(u);
+            last = u;
+            window.speechSynthesis.speak(u);
+          });
+          if (pauseMs && i < verses.length - 1 && window.speechSynthesis.speakSilence) {
+            window.speechSynthesis.speakSilence(pauseMs);
           }
         }
-
-        if (!inline) {
-          const block = data && data.promptFeedback && data.promptFeedback.blockReason;
-          const err = new Error(block ? `Blocked (${block})` : 'No audio returned by Gemini');
-          err.status = 502;
-          throw err;
-        }
-
-        return decodeGeminiInlineAudio(inline.data, inline.mimeType);
-      }
-
-      // Fetch with 404-only fallback to gemini-2.5-flash-tts and backoff (700ms, 1500ms) on 429/500/503/network
-      async function fetchGeminiAudio(text, cacheKey) {
-        if (cacheKey && audioBufferCache.has(cacheKey)) {
-          return audioBufferCache.get(cacheKey);
-        }
-        if (cacheKey && audioInflight.has(cacheKey)) {
-          return audioInflight.get(cacheKey);
-        }
-
-        const clean = sanitizeText(text);
-        const promptText = `${STYLE_PROMPTS[state.aiStyle] || STYLE_PROMPTS.reverent}${clean}`;
-        const models = ['gemini-3.8-flash-tts', 'gemini-3.8-flash-lite-tts', 'gemini-2.5-pro-preview-tts'];
-        const backoff = [700, 1500];
-
-        const work = (async () => {
-          let mIdx = Math.min(window.__luminaTtsModelIdx || 0, models.length - 1);
-          let attempt = 0;
-          while (true) {
-            try {
-              const decoded = await requestGeminiTts(models[mIdx], promptText);
-              window.__luminaTtsModelIdx = mIdx;
-              if (cacheKey) {
-                if (audioBufferCache.size > 28) {
-                  const oldest = audioBufferCache.keys().next().value;
-                  const oldVal = audioBufferCache.get(oldest);
-                  audioBufferCache.delete(oldest);
-                  if (oldVal && oldVal.wavBlobUrl) {
-                    try { URL.revokeObjectURL(oldVal.wavBlobUrl); } catch (e) {}
-                  }
-                }
-                audioBufferCache.set(cacheKey, decoded);
-              }
-              return decoded;
-            } catch (err) {
-              const st = err && err.status ? err.status : 0;
-              // Only fall back to gemini-2.5-flash-tts on HTTP 404 (not on 403)
-              const modelGone = st === 404 || (st === 400 && /model|not found|not supported/i.test(err.message || ''));
-              if (modelGone && mIdx + 1 < models.length) {
-                mIdx++;
-                continue;
-              }
-              const transient = st === 0 || st === 429 || st === 500 || st === 503;
-              if (transient && attempt < backoff.length) {
-                await new Promise((r) => setTimeout(r, backoff[attempt++]));
-                continue;
-              }
-              throw err;
-            }
-          }
-        })().finally(() => {
-          if (cacheKey) audioInflight.delete(cacheKey);
-        });
-
-        if (cacheKey) audioInflight.set(cacheKey, work);
-        return work;
-      }
-
-      function chunkCacheKey(chunk) {
-        const keyMode = getCustomApiKey() ? 'custom' : 'default';
-        return `${state.book}|${state.chapter}|${state.translation}|${state.aiVoice}|${state.aiStyle}|${state.flowMode}|v${chunk.startVerse}|${chunk.text.length}|${keyMode}`;
-      }
-
-      function prefetchChunks(fromIdx) {
-        [fromIdx + 1, fromIdx + 2].forEach((idx) => {
-          const ch = audio.chunks[idx];
-          if (ch) {
-            fetchGeminiAudio(ch.text, chunkCacheKey(ch)).catch(() => {});
-          }
-        });
-      }
-
-      function formatErrorMsg(err) {
-        const st = err && err.status ? err.status : 0;
-        const msg = err && err.message ? err.message : 'Network or playback error';
-        return st ? `HTTP ${st}: ${msg}` : msg;
-      }
-
-      /* --- Web Audio Gapless Scheduler & Sync Loop --- */
-      function stopSyncLoop() {
-        if (syncRafId !== null) {
-          cancelAnimationFrame(syncRafId);
-          syncRafId = null;
-        }
-      }
-
-      function stopAllWebAudioNodes() {
-        if (testSourceNode) {
-          try { testSourceNode.onended = null; testSourceNode.stop(); } catch (e) {}
-          testSourceNode = null;
-        }
-        audio.scheduled.forEach((entry) => {
-          try {
-            entry.source.onended = null;
-            entry.source.stop();
-          } catch (e) {}
-        });
-        audio.scheduled = [];
-        audio.nextStartTime = 0;
-      }
-
-      function stopHtmlFallbackAudio() {
-        if (!ttsFallbackAudio) return;
-        try {
-          ttsFallbackAudio.ontimeupdate = null;
-          ttsFallbackAudio.onended = null;
-          ttsFallbackAudio.onerror = null;
-          ttsFallbackAudio.pause();
-          ttsFallbackAudio.currentTime = 0;
-        } catch (e) {}
-      }
-
-      function stopMedia() {
-        stopSyncLoop();
-        stopAllWebAudioNodes();
-        stopHtmlFallbackAudio();
-        activeUtterance = null;
-        if ('speechSynthesis' in window) {
-          try { window.speechSynthesis.cancel(); } catch (e) {}
+        if (last) {
+          last.onend = () => {
+            if (tok !== audio.token) return;
+            finishChapterAudio(tok);
+          };
+        } else {
+          stopAudio();
         }
       }
 
       function stopAudio() {
         audio.token++;
-        stopMedia();
+        cancelSpeech();
         audio.status = 'idle';
         audio.verseIdx = -1;
-        audio.chunks = [];
-        audio.chunkIdx = 0;
-        audio.nextToSchedule = 0;
-        audio.pausedChunkIdx = 0;
-        audio.pausedOffsetSec = 0;
-        audio.fallbackActive = false;
-        audio.useHtmlAudio = false;
-        audio.browserQueue = [];
-        audio.browserQueueIdx = 0;
         highlightSpeaking(false);
         updateAudioUI();
       }
 
-      function getCurrentWebAudioEntry() {
-        if (!audioCtx || !audio.scheduled.length) return null;
-        const now = audioCtx.currentTime;
-        for (let i = 0; i < audio.scheduled.length; i++) {
-          const e = audio.scheduled[i];
-          if (now >= e.startCtxTime - 0.03 && now <= e.endCtxTime + 0.03) return e;
-        }
-        return audio.scheduled[0] || null;
-      }
-
-      function applyVerseFracSync(chunk, frac) {
-        if (!chunk) return;
-        const clamped = Math.max(0, Math.min(0.9999, frac));
-        const w = chunk.weights.find((x) => clamped >= x.s && clamped <= x.e) || chunk.weights[chunk.weights.length - 1];
-        if (w && w.idx !== audio.verseIdx) {
-          audio.verseIdx = w.idx;
-          highlightSpeaking(true);
-          updateAudioUI();
-        } else if ($('audioProg') && verses.length) {
-          const curIdx = w ? w.idx : Math.max(0, audio.verseIdx);
-          const span = w ? Math.max(0.01, w.e - w.s) : 1;
-          const local = w ? Math.max(0, Math.min(1, (clamped - w.s) / span)) : 0;
-          const pct = Math.min(100, Math.round(((curIdx + local) / verses.length) * 100));
-          $('audioProg').style.width = `${pct}%`;
-        }
-      }
-
-      function startWebAudioSyncLoop(tok) {
-        stopSyncLoop();
-        const tick = () => {
-          if (tok !== audio.token || audio.status !== 'playing' || audio.activeEngine !== 'ai') return;
-          if (audio.useHtmlAudio) {
-            const ch = audio.chunks[audio.chunkIdx];
-            if (ch && ttsFallbackAudio && ttsFallbackAudio.duration > 0) {
-              applyVerseFracSync(ch, ttsFallbackAudio.currentTime / ttsFallbackAudio.duration);
-            }
-          } else if (audioCtx) {
-            const entry = getCurrentWebAudioEntry();
-            if (entry) {
-              audio.chunkIdx = entry.chunkIdx;
-              const elapsedBuf = entry.offsetSec + Math.max(0, (audioCtx.currentTime - entry.startCtxTime) * entry.rate);
-              applyVerseFracSync(entry.chunk, elapsedBuf / (entry.buffer.duration || 1));
-            }
-          }
-          syncRafId = requestAnimationFrame(tick);
-        };
-        syncRafId = requestAnimationFrame(tick);
-      }
-
-      // Schedule chunk via Web Audio API at exact nextStartTime (gapless!)
-      async function pumpGaplessWebAudio(startCIdx, offsetSec, tok) {
-        if (tok !== audio.token) return;
-        if (startCIdx >= audio.chunks.length) {
-          finishChapterAudio(tok);
-          return;
-        }
-
-        const chunk = audio.chunks[startCIdx];
-        audio.nextToSchedule = startCIdx + 1;
-
-        if (!audio.scheduled.length) {
-          audio.chunkIdx = startCIdx;
-          audio.status = 'loading';
-          audio.verseIdx = chunk.weights[0].idx;
-          highlightSpeaking(true);
-          updateAudioUI();
-        }
-
-        // Prefetch chunks N+1 and N+2 immediately in the background
-        prefetchChunks(startCIdx);
-
-        let decoded;
-        try {
-          decoded = await fetchGeminiAudio(chunk.text, chunkCacheKey(chunk));
-        } catch (err) {
-          if (tok !== audio.token) return;
-          const errStr = formatErrorMsg(err);
-          setDiagStatus(`AI Voice failed (${errStr})`, 'err');
-          toast(`AI Voice (${errStr}) — using Browser fallback`);
-          // Only fall back to Browser Voice if nothing is already playing, or once prior finishes
-          stopAllWebAudioNodes();
-          playBrowserChunk(startCIdx, tok, true);
-          return;
-        }
-
-        if (tok !== audio.token || audio.status === 'idle' || audio.status === 'paused') return;
-
-        const khz = Math.round((decoded.sampleRate || 24000) / 1000);
-        setDiagStatus(`AI Voice Ready (${state.aiVoice} • ${khz}kHz)`, 'ok');
-
-        const ctx = unlockAudioContext();
-        if (!ctx || !decoded.audioBuffer) {
-          // Fallback to hidden <audio id="ttsFallbackAudio"> if Web Audio API failed
-          playHtmlAudioChunk(startCIdx, offsetSec, decoded, tok);
-          return;
-        }
-
-        try {
-          if (ctx.state === 'suspended') await ctx.resume();
-          if (tok !== audio.token || audio.status === 'idle' || audio.status === 'paused') return;
-
-          const buf = decoded.audioBuffer;
-          const safeOffset = Math.max(0, Math.min(buf.duration - 0.02, offsetSec || 0));
-          const rate = state.speed || 1.0;
-          const src = ctx.createBufferSource();
-          src.buffer = buf;
-          src.playbackRate.value = rate;
-          src.connect(ctx.destination);
-
-          const startAt = Math.max(ctx.currentTime + 0.02, audio.nextStartTime || 0);
-          const remainingBufSec = Math.max(0.01, buf.duration - safeOffset);
-          const endAt = startAt + (remainingBufSec / rate);
-
-          const entry = {
-            chunkIdx: startCIdx,
-            chunk,
-            source: src,
-            buffer: buf,
-            startCtxTime: startAt,
-            endCtxTime: endAt,
-            offsetSec: safeOffset,
-            rate
-          };
-          audio.scheduled.push(entry);
-          audio.nextStartTime = endAt;
-
-          src.onended = () => {
-            if (tok !== audio.token) return;
-            const i = audio.scheduled.indexOf(entry);
-            if (i !== -1) audio.scheduled.splice(i, 1);
-
-            if (startCIdx === audio.chunks.length - 1 && audio.scheduled.length === 0) {
-              finishChapterAudio(tok);
-              return;
-            }
-            // If next chunk wasn't already queued ahead of time, trigger it now
-            if (audio.nextToSchedule <= startCIdx + 1 && startCIdx + 1 < audio.chunks.length) {
-              pumpGaplessWebAudio(startCIdx + 1, 0, tok);
-            }
-          };
-
-          src.start(startAt, safeOffset);
-          audio.useHtmlAudio = false;
-          audio.activeEngine = 'ai';
-          audio.fallbackActive = false;
-          audio.status = 'playing';
-          updateAudioUI();
-          startWebAudioSyncLoop(tok);
-
-          // Pre-schedule chunk N+1 seamlessly once prefetched so transitions have zero gap
-          if (startCIdx + 1 < audio.chunks.length) {
-            const nextIdx = startCIdx + 1;
-            const nextChunk = audio.chunks[nextIdx];
-            fetchGeminiAudio(nextChunk.text, chunkCacheKey(nextChunk))
-              .then(() => {
-                if (tok !== audio.token || audio.status !== 'playing') return;
-                if (audio.nextToSchedule === nextIdx && audio.scheduled.length < 2) {
-                  pumpGaplessWebAudio(nextIdx, 0, tok);
-                }
-              })
-              .catch(() => {});
-          }
-        } catch (webAudioErr) {
-          if (tok !== audio.token) return;
-          playHtmlAudioChunk(startCIdx, offsetSec, decoded, tok);
-        }
-      }
-
-      // Secondary <audio id="ttsFallbackAudio"> path if Web Audio fails on a browser
-      function playHtmlAudioChunk(cIdx, offsetSec, decoded, tok) {
-        if (tok !== audio.token) return;
-        const chunk = audio.chunks[cIdx];
-        if (!chunk || !decoded || !decoded.wavBlobUrl || !ttsFallbackAudio) {
-          playBrowserChunk(cIdx, tok, true);
-          return;
-        }
-        audio.useHtmlAudio = true;
-        audio.activeEngine = 'ai';
-        audio.chunkIdx = cIdx;
-        audio.fallbackActive = false;
-
-        ttsFallbackAudio.onended = () => {
-          if (tok !== audio.token) return;
-          stopSyncLoop();
-          if (cIdx + 1 < audio.chunks.length) {
-            pumpGaplessWebAudio(cIdx + 1, 0, tok);
-          } else {
-            finishChapterAudio(tok);
-          }
-        };
-        ttsFallbackAudio.onerror = () => {
-          if (tok !== audio.token) return;
-          stopSyncLoop();
-          playBrowserChunk(cIdx, tok, true);
-        };
-
-        ttsFallbackAudio.src = decoded.wavBlobUrl;
-        ttsFallbackAudio.playbackRate = state.speed || 1.0;
-        ttsFallbackAudio.preservesPitch = true;
-        if (offsetSec > 0) {
-          try { ttsFallbackAudio.currentTime = offsetSec; } catch (e) {}
-        }
-        audio.status = 'playing';
-        updateAudioUI();
-        ttsFallbackAudio.play()
-          .then(() => startWebAudioSyncLoop(tok))
-          .catch(() => {
-            if (tok !== audio.token) return;
-            playBrowserChunk(cIdx, tok, true);
-          });
-      }
-
-      /* --- Upgraded Natural Browser Voice Engine (Web Speech API) --- */
-      function scoreSystemVoice(v) {
-        let score = 0;
-        const n = (v.name || '').toLowerCase();
-        const l = (v.lang || '').toLowerCase();
-        if (l.startsWith('en-us') || l.startsWith('en-gb')) score += 45;
-        else if (l.startsWith('en')) score += 25;
-        if (/natural|neural|online|enhanced|premium|samantha|aria|guy|jenny|daniel|serena|google us english|google uk english/.test(n)) score += 40;
-        if (/compact|espeak/.test(n)) score -= 25;
-        return score;
-      }
-
-      function populateBrowserVoices() {
-        if (!('speechSynthesis' in window)) return;
-        const raw = window.speechSynthesis.getVoices() || [];
-        sysVoices = raw.slice().sort((a, b) => scoreSystemVoice(b) - scoreSystemVoice(a));
-        const sel = $('selBrowserVoice');
-        if (!sel) return;
-        const en = sysVoices.filter((v) => /^en/i.test(v.lang));
-        const list = en.length ? en : sysVoices;
-        sel.innerHTML = '<option value="">Auto (Best Natural English Voice)</option>' +
-          list.map((v) => `<option value="${esc(v.name)}">${esc(v.name)} (${esc(v.lang)})</option>`).join('');
-        sel.value = state.browserVoice || '';
-      }
-
-      function getChosenSystemVoice() {
-        if (!('speechSynthesis' in window)) return null;
-        const list = window.speechSynthesis.getVoices() || sysVoices;
-        if (!list.length) return null;
-        if (state.browserVoice) {
-          const exact = list.find((v) => v.name === state.browserVoice);
-          if (exact) return exact;
-        }
-        const sorted = list.slice().sort((a, b) => scoreSystemVoice(b) - scoreSystemVoice(a));
-        return sorted[0] || null;
-      }
-
-      function splitBrowserUtterances(chunk) {
-        const items = [];
-        chunk.verses.forEach((v) => {
-          const text = sanitizeText(v.text);
-          if (text.length <= 210) {
-            items.push({ idx: v.idx, text });
-            return;
-          }
-          const parts = text.match(/[^.!?;]+[.!?;]*\s*/g) || [text];
-          let buf = '';
-          parts.forEach((p) => {
-            if (buf && (buf.length + p.length) > 210) {
-              items.push({ idx: v.idx, text: buf.trim() });
-              buf = p;
-            } else {
-              buf += p;
-            }
-          });
-          if (buf.trim()) items.push({ idx: v.idx, text: buf.trim() });
-        });
-        return items;
-      }
-
-      function playBrowserChunk(cIdx, tok, isFallback) {
-        if (tok !== audio.token) return;
-        if (!('speechSynthesis' in window)) {
-          toast('Browser Voice is unavailable on this device.');
-          stopAudio();
-          return;
-        }
-        const chunk = audio.chunks[cIdx];
-        if (!chunk) {
-          finishChapterAudio(tok);
-          return;
-        }
-
-        audio.activeEngine = 'browser';
-        audio.fallbackActive = !!isFallback;
-        audio.chunkIdx = cIdx;
-        audio.browserQueue = splitBrowserUtterances(chunk);
-        audio.browserQueueIdx = 0;
-
-        try { window.speechSynthesis.cancel(); } catch (e) {}
-        if (audio.status === 'idle') audio.status = 'loading';
-
-        const speakNext = () => {
-          if (tok !== audio.token || audio.status === 'idle' || audio.status === 'paused') return;
-          if (audio.browserQueueIdx >= audio.browserQueue.length) {
-            audio.chunkIdx = cIdx + 1;
-            if (audio.chunkIdx < audio.chunks.length) {
-              // Stay on Browser for the rest of this playback attempt if fallback triggered,
-              // while keeping state.voiceEngine === 'ai' untouched for future playback starts
-              if (state.voiceEngine === 'ai' && !isFallback) {
-                pumpGaplessWebAudio(audio.chunkIdx, 0, tok);
-              } else {
-                playBrowserChunk(audio.chunkIdx, tok, isFallback);
-              }
-            } else {
-              finishChapterAudio(tok);
-            }
-            return;
-          }
-
-          const item = audio.browserQueue[audio.browserQueueIdx];
-          const u = new SpeechSynthesisUtterance(item.text);
-          u.lang = 'en-US';
-          u.rate = state.speed || 1.0;
-          const v = getChosenSystemVoice();
-          if (v) u.voice = v;
-
-          activeUtterance = u; // Prevent GC dropping onend in Chrome/Safari
-
-          u.onstart = () => {
-            if (tok !== audio.token) return;
-            audio.status = 'playing';
-            audio.verseIdx = item.idx;
-            highlightSpeaking(true);
-            updateAudioUI();
-          };
-          u.onend = () => {
-            if (tok !== audio.token || audio.status !== 'playing') return;
-            audio.browserQueueIdx++;
-            speakNext();
-          };
-          u.onerror = (ev) => {
-            if (tok !== audio.token) return;
-            const code = ev && ev.error ? ev.error : '';
-            if (code === 'canceled' || code === 'interrupted') return;
-            audio.browserQueueIdx++;
-            speakNext();
-          };
-
-          audio.status = 'playing';
-          audio.verseIdx = item.idx;
-          highlightSpeaking(true);
-          updateAudioUI();
-          window.speechSynthesis.speak(u);
-        };
-
-        speakNext();
-      }
-
-      /* --- Transport Controls (Start, Pause/Resume, Live Speed, Prev/Next Verse) --- */
       function finishChapterAudio(tok) {
         if (tok !== audio.token) return;
         const next = state.autoNext ? getAdjacent(1) : null;
@@ -2494,94 +1872,26 @@
         }
       }
 
-      function startReading(startVerseIdx) {
-        unlockAudioContext();
-        if (!verses.length) return;
-        audio.token++;
-        const tok = audio.token;
-        stopMedia();
-
-        const idx = Math.max(0, Math.min(verses.length - 1, startVerseIdx || 0));
-        audio.chunks = buildChunks(verses, idx, state.flowMode);
-        audio.chunkIdx = 0;
-        audio.nextToSchedule = 0;
-        audio.pausedChunkIdx = 0;
-        audio.pausedOffsetSec = 0;
-        audio.verseIdx = idx;
-        audio.fallbackActive = false;
-        audio.useHtmlAudio = false;
-
-        const hasKey = !!(getCustomApiKey() || apiKey);
-        if (state.voiceEngine === 'browser') {
-          playBrowserChunk(0, tok, false);
-        } else if (!hasKey) {
-          audio.status = 'idle';
-          updateAudioUI();
-          populateBrowserVoices();
-          syncVoiceControls();
-          openModal('voiceModal');
-          const kd = document.querySelector('.key-details');
-          if (kd) kd.open = true;
-          setDiagStatus('AI Voice needs a Gemini API key. Paste it below, tap "Test AI Voice", then Done and Listen again.', 'err');
-          return;
-        } else {
-          pumpGaplessWebAudio(0, 0, tok);
-        }
-      }
-
       function togglePlayPause() {
-        unlockAudioContext();
         if (audio.status === 'idle') {
           startReading(0);
           return;
         }
         if (audio.status === 'playing' || audio.status === 'loading') {
-          // Record exact offset for Web Audio or HTML Audio pause/resume
-          if (audio.activeEngine === 'ai') {
-            if (audio.useHtmlAudio && ttsFallbackAudio) {
-              audio.pausedChunkIdx = audio.chunkIdx;
-              audio.pausedOffsetSec = ttsFallbackAudio.currentTime || 0;
-              ttsFallbackAudio.pause();
-            } else if (audioCtx) {
-              const cur = getCurrentWebAudioEntry();
-              if (cur) {
-                audio.pausedChunkIdx = cur.chunkIdx;
-                const elapsed = Math.max(0, (audioCtx.currentTime - cur.startCtxTime) * cur.rate);
-                audio.pausedOffsetSec = Math.min(cur.buffer.duration - 0.02, cur.offsetSec + elapsed);
-              } else {
-                audio.pausedChunkIdx = audio.chunkIdx;
-                audio.pausedOffsetSec = 0;
-              }
-              stopAllWebAudioNodes();
-            }
-          } else if ('speechSynthesis' in window) {
-            try { window.speechSynthesis.cancel(); } catch (e) {}
-          }
-          stopSyncLoop();
+          audio.token++;
+          cancelSpeech();
           audio.status = 'paused';
           updateAudioUI();
           return;
         }
         if (audio.status === 'paused') {
-          if (audio.activeEngine === 'ai') {
-            if (audio.useHtmlAudio && ttsFallbackAudio && ttsFallbackAudio.src) {
-              audio.status = 'playing';
-              ttsFallbackAudio.playbackRate = state.speed || 1.0;
-              ttsFallbackAudio.play()
-                .then(() => startWebAudioSyncLoop(audio.token))
-                .catch(() => startReading(Math.max(0, audio.verseIdx)));
-              updateAudioUI();
-            } else {
-              audio.token++;
-              const tok = audio.token;
-              audio.scheduled = [];
-              audio.nextStartTime = 0;
-              audio.nextToSchedule = audio.pausedChunkIdx;
-              pumpGaplessWebAudio(audio.pausedChunkIdx, audio.pausedOffsetSec, tok);
-            }
-          } else {
-            startReading(Math.max(0, audio.verseIdx));
-          }
+          startReading(Math.max(0, audio.verseIdx));
+        }
+      }
+
+      function restartIfPlaying() {
+        if (audio.status === 'playing' || audio.status === 'loading') {
+          startReading(Math.max(0, audio.verseIdx));
         }
       }
 
@@ -2589,137 +1899,20 @@
         state.speed = parseFloat(newRate) || 1.0;
         saveState();
         syncVoiceControls();
-
-        if (audio.status !== 'playing') return;
-        if (audio.activeEngine === 'ai') {
-          if (audio.useHtmlAudio && ttsFallbackAudio) {
-            ttsFallbackAudio.playbackRate = state.speed;
-          } else if (audioCtx) {
-            const cur = getCurrentWebAudioEntry();
-            if (cur) {
-              const elapsed = Math.max(0, (audioCtx.currentTime - cur.startCtxTime) * cur.rate);
-              const resumeOffset = Math.min(cur.buffer.duration - 0.02, cur.offsetSec + elapsed);
-              const resumeChunk = cur.chunkIdx;
-              audio.token++;
-              const tok = audio.token;
-              stopAllWebAudioNodes();
-              audio.nextToSchedule = resumeChunk;
-              pumpGaplessWebAudio(resumeChunk, resumeOffset, tok);
-            }
-          }
-        } else if (audio.activeEngine === 'browser') {
-          startReading(Math.max(0, audio.verseIdx));
-        }
+        restartIfPlaying();
       }
 
       function stepVerse(delta) {
-        unlockAudioContext();
         if (!verses.length) return;
         const baseIdx = audio.status === 'idle' ? 0 : Math.max(0, audio.verseIdx);
-        const target = Math.max(0, Math.min(verses.length - 1, baseIdx + delta));
-        startReading(target);
+        startReading(Math.max(0, Math.min(verses.length - 1, baseIdx + delta)));
       }
 
-      /* --- Live Diagnostic Tests in #voiceModal --- */
-      async function runTestAiVoice() {
-        unlockAudioContext();
-        const btn = $('btnTestAiVoice');
-        if (btn) btn.disabled = true;
-
-        audio.token++;
-        stopMedia();
-        audio.status = 'idle';
-        highlightSpeaking(false);
-        updateAudioUI();
-
-        const voice = state.aiVoice || 'Charon';
-        if (!(getCustomApiKey() || apiKey)) {
-          setDiagStatus('No Gemini API key set. Paste one under "Gemini API Key" below, then test again.', 'err');
-          if (btn) btn.disabled = false;
-          return;
-        }
-        setDiagStatus(`Testing Gemini AI Voice (${voice})...`);
-
-        try {
-          const decoded = await fetchGeminiAudio('The Lord is my shepherd; I shall not want.', null);
-          const khz = Math.round((decoded.sampleRate || 24000) / 1000);
-          const ctx = unlockAudioContext();
-
-          if (ctx && decoded.audioBuffer) {
-            if (ctx.state === 'suspended') await ctx.resume();
-            const src = ctx.createBufferSource();
-            src.buffer = decoded.audioBuffer;
-            src.playbackRate.value = state.speed || 1.0;
-            src.connect(ctx.destination);
-            testSourceNode = src;
-            src.onended = () => {
-              if (testSourceNode === src) testSourceNode = null;
-              if (decoded.wavBlobUrl) {
-                try { URL.revokeObjectURL(decoded.wavBlobUrl); } catch (e) {}
-              }
-              if (btn) btn.disabled = false;
-            };
-            setDiagStatus(`AI Voice Ready (${voice} • ${khz}kHz)`, 'ok');
-            src.start(0);
-          } else if (ttsFallbackAudio && decoded.wavBlobUrl) {
-            ttsFallbackAudio.onended = () => {
-              try { URL.revokeObjectURL(decoded.wavBlobUrl); } catch (e) {}
-              if (btn) btn.disabled = false;
-            };
-            ttsFallbackAudio.onerror = () => {
-              setDiagStatus('Decoded WAV failed to play in fallback audio element.', 'err');
-              if (btn) btn.disabled = false;
-            };
-            ttsFallbackAudio.src = decoded.wavBlobUrl;
-            ttsFallbackAudio.playbackRate = state.speed || 1.0;
-            setDiagStatus(`AI Voice Ready (${voice} • ${khz}kHz)`, 'ok');
-            await ttsFallbackAudio.play();
-          } else {
-            setDiagStatus(`AI Voice Ready (${voice} • ${khz}kHz)`, 'ok');
-            if (btn) btn.disabled = false;
-          }
-        } catch (err) {
-          const errStr = formatErrorMsg(err);
-          setDiagStatus(errStr, 'err');
-          toast(errStr);
-          if (btn) btn.disabled = false;
-        }
-      }
-
-      function runTestBrowserVoice() {
-        const btn = $('btnTestBrowserVoice');
-        if (!('speechSynthesis' in window)) {
-          setDiagStatus('Browser Voice (speechSynthesis) is not supported here.', 'err');
-          return;
-        }
-        if (btn) btn.disabled = true;
-
-        audio.token++;
-        stopMedia();
-        audio.status = 'idle';
-        highlightSpeaking(false);
-        updateAudioUI();
-
-        const u = new SpeechSynthesisUtterance('The Lord is my shepherd; I shall not want.');
-        u.lang = 'en-US';
-        u.rate = state.speed || 1.0;
-        const v = getChosenSystemVoice();
-        if (v) u.voice = v;
-        activeUtterance = u;
-        const label = v ? v.name : 'System Default';
-        setDiagStatus(`Playing Browser Voice (${label})...`, 'ok');
-
-        u.onend = () => {
-          setDiagStatus(`Browser Voice Ready (${label})`, 'ok');
-          if (btn) btn.disabled = false;
-        };
-        u.onerror = (ev) => {
-          const code = ev && ev.error ? ev.error : 'error';
-          if (code !== 'canceled' && code !== 'interrupted') {
-            setDiagStatus(`Browser Voice error: ${code}`, 'err');
-          }
-          if (btn) btn.disabled = false;
-        };
+      function previewVoice() {
+        if (!hasSpeech()) return;
+        stopAudio();
+        const u = makeUtterance('The Lord is my shepherd; I shall not want. He makes me lie down in green pastures.');
+        audio.queue.push(u);
         window.speechSynthesis.speak(u);
       }
 
@@ -2746,25 +1939,18 @@
         if ($('icoLoad')) $('icoLoad').classList.toggle('hidden', !isLoad);
         if ($('lblListen')) $('lblListen').textContent = isPlay ? 'Pause Audio' : (isPause ? 'Resume Audio' : 'Listen to Chapter');
 
-        const engineLbl = (audio.status !== 'idle' && audio.activeEngine === 'browser')
-          ? 'Device Voice'
-          : (state.voiceEngine === 'browser' ? 'Device Voice' : `AI Voice (${state.aiVoice})`);
-        const flowLbl = state.flowMode === 'smooth' ? 'Smooth Flow' : 'Study Pause';
+        const flowLbl = state.flowMode === 'verse' ? 'Verse pauses' : 'Continuous';
         const curV = (audio.verseIdx >= 0 && verses[audio.verseIdx]) ? verses[audio.verseIdx].verse : null;
         const pos = Math.max(1, audio.verseIdx + 1);
         const total = verses.length || 1;
 
         if ($('audioL1')) {
-          if (isLoad) $('audioL1').textContent = `Loading ${state.book} ${state.chapter}${curV ? ':' + curV : ''}...`;
+          if (isLoad) $('audioL1').textContent = `Starting ${state.book} ${state.chapter}${curV ? ':' + curV : ''}...`;
           else if (isPlay && curV) $('audioL1').textContent = `Reading ${state.book} ${state.chapter}:${curV} (${pos} / ${total})`;
           else if (isPause && curV) $('audioL1').textContent = `Paused • ${state.book} ${state.chapter}:${curV} (${pos} / ${total})`;
           else $('audioL1').textContent = `Ready to read ${state.book} ${state.chapter}`;
         }
-
-        if ($('audioL2')) {
-          $('audioL2').textContent = `${engineLbl} • ${flowLbl}`;
-        }
-
+        if ($('audioL2')) $('audioL2').textContent = `${voiceShortName()} • ${flowLbl}`;
         if ($('audioProg')) {
           const pct = (audio.status !== 'idle' && verses.length) ? Math.round((pos / total) * 100) : 0;
           $('audioProg').style.width = `${pct}%`;
@@ -3132,17 +2318,12 @@
       }
 
       function syncVoiceControls() {
-        document.querySelectorAll('#engineGroup button').forEach((b) => {
-          b.classList.toggle('is-active', b.dataset.engine === state.voiceEngine);
-        });
-        if ($('selAiVoice')) $('selAiVoice').value = state.aiVoice;
-        if ($('selAiStyle')) $('selAiStyle').value = state.aiStyle;
+        if ($('selVoice')) $('selVoice').value = voiceList.some((v) => v.name === state.voice) ? state.voice : '';
         if ($('selFlowMode')) $('selFlowMode').value = state.flowMode;
         if ($('selDockSpeed')) $('selDockSpeed').value = String(state.speed);
         if ($('selModalSpeed')) $('selModalSpeed').value = String(state.speed);
+        if ($('selPitch')) $('selPitch').value = String(state.pitch || 1);
         if ($('chkAutoNext')) $('chkAutoNext').checked = !!state.autoNext;
-        if ($('selBrowserVoice')) $('selBrowserVoice').value = state.browserVoice || '';
-        if ($('inpCustomKey')) $('inpCustomKey').value = getCustomApiKey();
         updateAudioUI();
       }
 
@@ -3500,7 +2681,7 @@
         $('selModalSpeed').addEventListener('change', (e) => applyLiveSpeedChange(e.target.value));
 
         $('btnVoiceModal').addEventListener('click', () => {
-          populateBrowserVoices();
+          populateVoices();
           syncVoiceControls();
           openModal('voiceModal');
         });
@@ -3517,45 +2698,35 @@
         $('bookSearch').addEventListener('input', renderBookList);
 
         // Voice Modal Controls
-        $('engineGroup').addEventListener('click', (e) => {
-          const btn = e.target.closest('button[data-engine]');
-          if (!btn) return;
-          state.voiceEngine = btn.dataset.engine;
+        $('selVoice').addEventListener('change', (e) => {
+          state.voice = e.target.value;
           saveState();
-          syncVoiceControls();
+          updateAudioUI();
+          restartIfPlaying();
         });
-        $('selAiVoice').addEventListener('change', (e) => {
-          state.aiVoice = e.target.value;
+        $('selPitch').addEventListener('change', (e) => {
+          state.pitch = parseFloat(e.target.value) || 1;
           saveState();
-          syncVoiceControls();
-        });
-        $('selAiStyle').addEventListener('change', (e) => {
-          state.aiStyle = e.target.value;
-          saveState();
+          restartIfPlaying();
         });
         $('selFlowMode').addEventListener('change', (e) => {
           state.flowMode = e.target.value;
           saveState();
           syncVoiceControls();
+          restartIfPlaying();
         });
         $('chkAutoNext').addEventListener('change', (e) => {
           state.autoNext = !!e.target.checked;
           saveState();
         });
-        $('selBrowserVoice').addEventListener('change', (e) => {
-          state.browserVoice = e.target.value;
-          saveState();
+        $('btnPreviewVoice').addEventListener('click', previewVoice);
+        $('btnMoreVoices').addEventListener('click', () => {
+          if (window.AndroidBridge && window.AndroidBridge.openVoiceSettings) window.AndroidBridge.openVoiceSettings();
+          else toast('Add voices in your system speech / text-to-speech settings.');
         });
-        $('inpCustomKey').addEventListener('input', (e) => {
-          safeSet(CUSTOM_KEY_STORE, e.target.value.trim());
+        $('btnGetGoogleVoices').addEventListener('click', () => {
+          if (window.AndroidBridge && window.AndroidBridge.openPlayStore) window.AndroidBridge.openPlayStore('com.google.android.tts');
         });
-        $('btnClearCustomKey').addEventListener('click', () => {
-          safeSet(CUSTOM_KEY_STORE, '');
-          $('inpCustomKey').value = '';
-          toast('Custom Gemini API key cleared');
-        });
-        $('btnTestAiVoice').addEventListener('click', runTestAiVoice);
-        $('btnTestBrowserVoice').addEventListener('click', runTestBrowserVoice);
 
         // Study Modal Controls
         $('studyTabs').addEventListener('click', (e) => {
@@ -3663,9 +2834,9 @@
           if (e.key === 'Escape') closeAllModals();
         });
 
-        if ('speechSynthesis' in window) {
-          populateBrowserVoices();
-          try { window.speechSynthesis.onvoiceschanged = populateBrowserVoices; } catch (e) {}
+        if (hasSpeech()) {
+          populateVoices();
+          try { window.speechSynthesis.onvoiceschanged = populateVoices; } catch (e) {}
         }
       }
 

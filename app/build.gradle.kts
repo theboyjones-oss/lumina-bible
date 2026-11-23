@@ -10,15 +10,9 @@ android {
         applicationId = "com.lumina.biblestudy"
         minSdk = 24
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 4
+        versionName = "2.0"
 
-        // No key is ever built into the APK (releases are public) - users paste their own in the app
-        buildConfigField("String", "GEMINI_API_KEY", "\"\"")
-    }
-
-    buildFeatures {
-        buildConfig = true
     }
 
     signingConfigs {

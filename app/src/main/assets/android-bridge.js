@@ -1,5 +1,6 @@
 /* Lumina Android bridge — loaded before the app script.
    - Replaces the Web Speech API (not functional in Android WebView) with native Android TextToSpeech
+     (Speech Services by Google neural voices: free, no key, offline once downloaded)
    - Routes JSON backup downloads to the Android "Save as" picker
    - Syncs status/navigation bar colours with the reading theme
    - Handles the hardware Back button (closes modals / search drawer first) */
@@ -48,6 +49,8 @@
         synth.speaking = false;
         TTS.stop();
       },
+      // Android-only: insert a pause into the speech queue (used for "pause between verses")
+      speakSilence: function (ms) { TTS.silence(Number(ms) || 0); },
       pause: function () { synth.cancel(); },
       resume: function () {},
       addEventListener: function (t, fn) { if (t === 'voiceschanged') synth.onvoiceschanged = fn; },
@@ -135,29 +138,3 @@
   };
 })();
 
-/* ---------- 5. Native Gemini requests (no CORS / WebView network quirks) ---------- */
-(function () {
-  var G = window.AndroidGemini;
-  if (!G) return;
-  var waiting = {};
-  var n = 1;
-  window.__luminaGeminiDone = function (id, status) {
-    var w = waiting[id];
-    if (!w) return;
-    delete waiting[id];
-    // Body is served from memory by the native asset interceptor (avoids huge JS strings)
-    fetch('https://appassets.androidplatform.net/__gemini/' + id)
-      .then(function (r) { return r.text(); })
-      .then(function (body) {
-        w.resolve(new Response(body, { status: status || 599, headers: { 'Content-Type': 'application/json' } }));
-      })
-      .catch(w.reject);
-  };
-  window.luminaNativePost = function (model, key, body) {
-    return new Promise(function (resolve, reject) {
-      var id = 'g' + (n++) + '_' + Date.now();
-      waiting[id] = { resolve: resolve, reject: reject };
-      try { G.post(id, model, key, body); } catch (e) { delete waiting[id]; reject(e); }
-    });
-  };
-})();
