@@ -1,0 +1,3679 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lumina Bible Study</title>
+  <script src="android-bridge.js"></script>
+  <style>
+    /* =========================================================================
+       1. DESIGN TOKENS & THEME PALETTES (Zero External Dependencies)
+       ========================================================================= */
+    :root, [data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #0b1120;
+      --surface: #111827;
+      --elev: #1e293b;
+      --hover: #273549;
+      --border: #1e293b;
+      --border-hi: #334155;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #14b8a6;
+      --accent-hi: #2dd4bf;
+      --accent-soft: rgba(20, 184, 166, 0.16);
+      --accent-line: rgba(20, 184, 166, 0.45);
+      --accent-glow: rgba(20, 184, 166, 0.28);
+      --hl-yellow: rgba(234, 179, 8, 0.26);
+      --hl-teal: rgba(20, 184, 166, 0.24);
+      --hl-green: rgba(34, 197, 94, 0.24);
+      --hl-blue: rgba(59, 130, 246, 0.24);
+      --hl-rose: rgba(244, 63, 94, 0.24);
+      --speak-bg: rgba(20, 184, 166, 0.17);
+      --ok-bg: rgba(16, 185, 129, 0.14);
+      --ok-border: rgba(16, 185, 129, 0.45);
+      --ok-text: #34d399;
+      --err-bg: rgba(248, 113, 113, 0.14);
+      --err-border: rgba(248, 113, 113, 0.45);
+      --err-text: #f87171;
+      --shadow: 0 22px 52px rgba(0, 0, 0, 0.62);
+    }
+
+    [data-theme="sepia"] {
+      color-scheme: light;
+      --bg: #f5ecd9;
+      --surface: #efe3ca;
+      --elev: #faf4e6;
+      --hover: #e5d5b7;
+      --border: #d9c7a7;
+      --border-hi: #bfa780;
+      --text: #2c2117;
+      --muted: #66533e;
+      --accent: #0f766e;
+      --accent-hi: #0f766e;
+      --accent-soft: rgba(15, 118, 110, 0.14);
+      --accent-line: rgba(15, 118, 110, 0.44);
+      --accent-glow: rgba(15, 118, 110, 0.22);
+      --hl-yellow: rgba(217, 119, 6, 0.22);
+      --hl-teal: rgba(13, 148, 136, 0.20);
+      --hl-green: rgba(22, 163, 74, 0.20);
+      --hl-blue: rgba(37, 99, 235, 0.18);
+      --hl-rose: rgba(225, 29, 72, 0.18);
+      --speak-bg: rgba(15, 118, 110, 0.15);
+      --ok-bg: rgba(15, 118, 110, 0.12);
+      --ok-border: rgba(15, 118, 110, 0.42);
+      --ok-text: #0f766e;
+      --err-bg: rgba(185, 28, 28, 0.11);
+      --err-border: rgba(185, 28, 28, 0.36);
+      --err-text: #b91c1c;
+      --shadow: 0 20px 48px rgba(44, 33, 23, 0.22);
+    }
+
+    [data-theme="light"] {
+      color-scheme: light;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --elev: #f1f5f9;
+      --hover: #e2e8f0;
+      --border: #e2e8f0;
+      --border-hi: #cbd5e1;
+      --text: #0f172a;
+      --muted: #475569;
+      --accent: #0d9488;
+      --accent-hi: #0f766e;
+      --accent-soft: rgba(13, 148, 136, 0.12);
+      --accent-line: rgba(13, 148, 136, 0.42);
+      --accent-glow: rgba(13, 148, 136, 0.20);
+      --hl-yellow: rgba(250, 204, 21, 0.32);
+      --hl-teal: rgba(20, 184, 166, 0.20);
+      --hl-green: rgba(34, 197, 94, 0.20);
+      --hl-blue: rgba(59, 130, 246, 0.18);
+      --hl-rose: rgba(244, 63, 94, 0.18);
+      --speak-bg: rgba(13, 148, 136, 0.13);
+      --ok-bg: rgba(13, 148, 136, 0.12);
+      --ok-border: rgba(13, 148, 136, 0.40);
+      --ok-text: #0f766e;
+      --err-bg: rgba(220, 38, 38, 0.10);
+      --err-border: rgba(220, 38, 38, 0.35);
+      --err-text: #dc2626;
+      --shadow: 0 20px 48px rgba(15, 23, 42, 0.16);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    .hidden { display: none !important; }
+    * { -webkit-tap-highlight-color: transparent; }
+    button, input, select, textarea { font-family: inherit; color: inherit; }
+    button { cursor: pointer; border: none; background: transparent; padding: 0; }
+    button:disabled { opacity: 0.42; cursor: not-allowed; }
+    svg { display: block; flex-shrink: 0; }
+
+    /* Theme-aware native <select> */
+    .ctrl-select {
+      background-color: var(--elev);
+      color: var(--text);
+      border: 1px solid var(--border-hi);
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+    .ctrl-select:focus { border-color: var(--accent); }
+    .ctrl-select option {
+      background-color: var(--surface);
+      color: var(--text);
+    }
+
+    /* =========================================================================
+       2. STICKY TOP NAVIGATION BAR (z-index: 100)
+       ========================================================================= */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background-color: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .topbar-inner {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 9px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .topbar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .brand-mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background-color: var(--accent-soft);
+      border: 1px solid var(--accent-line);
+      color: var(--accent-hi);
+      flex-shrink: 0;
+    }
+    .pill-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 36px;
+      padding: 0 12px;
+      border-radius: 10px;
+      background-color: var(--elev);
+      border: 1px solid var(--border-hi);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 700;
+      max-width: 210px;
+      transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+    .pill-btn:hover { background-color: var(--hover); border-color: var(--accent-line); }
+    .pill-btn.is-active {
+      background-color: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent-hi);
+    }
+    .pill-btn .trunc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .icon-btn { width: 36px; padding: 0; flex-shrink: 0; }
+    .aa-btn { font-family: Georgia, "Times New Roman", serif; font-size: 15px; flex-shrink: 0; }
+    .right-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+    /* Collapsible Search & Reference Jump Drawer */
+    .search-drawer {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      padding-top: 6px;
+      border-top: 1px solid var(--border);
+    }
+    .search-row { display: flex; gap: 6px; align-items: center; }
+    .text-input {
+      flex: 1;
+      min-width: 0;
+      height: 36px;
+      padding: 0 11px;
+      border-radius: 9px;
+      background-color: var(--elev);
+      border: 1px solid var(--border-hi);
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+    }
+    .text-input:focus { border-color: var(--accent); }
+    .text-input::placeholder { color: var(--muted); }
+    .go-btn {
+      height: 36px;
+      padding: 0 14px;
+      border-radius: 9px;
+      background-color: var(--accent-soft);
+      border: 1px solid var(--accent-line);
+      color: var(--accent-hi);
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .go-btn:hover { background-color: var(--accent); color: #ffffff; }
+    .filter-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* =========================================================================
+       3. MAIN SCRIPTURE READER
+       ========================================================================= */
+    .reader {
+      max-width: 740px;
+      margin: 0 auto;
+      padding: 18px 16px 156px;
+    }
+    .badges {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .badge-acc {
+      background-color: var(--accent-soft);
+      border: 1px solid var(--accent-line);
+      color: var(--accent-hi);
+    }
+    .badge-dim {
+      background-color: var(--elev);
+      border: 1px solid var(--border-hi);
+      color: var(--muted);
+    }
+    .chapter-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 14px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .chapter-title {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .head-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .listen-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 36px;
+      padding: 0 14px;
+      border-radius: 10px;
+      background-color: var(--accent);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+    .listen-btn:hover { opacity: 0.92; }
+    .nav-btn {
+      height: 36px;
+      padding: 0 12px;
+      border-radius: 9px;
+      background-color: var(--surface);
+      border: 1px solid var(--border-hi);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .nav-btn:hover:not(:disabled) { background-color: var(--hover); color: var(--text); }
+
+    .status-banner {
+      padding: 9px 12px;
+      margin-bottom: 12px;
+      border-radius: 10px;
+      background-color: var(--accent-soft);
+      border: 1px solid var(--accent-line);
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    .verses-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 18px;
+      line-height: 1.75;
+    }
+    .verses-list.font-serif { font-family: Georgia, "Times New Roman", serif; }
+    .verses-list.font-sans { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+
+    .verse-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 11px;
+      cursor: pointer;
+      transition: background-color 0.16s ease, box-shadow 0.16s ease;
+    }
+    .verse-row:hover { background-color: var(--hover); }
+    .verse-row.is-selected {
+      background-color: var(--elev);
+      box-shadow: inset 0 0 0 1px var(--accent-line);
+    }
+    .verse-row.is-speaking {
+      background-color: var(--speak-bg) !important;
+      box-shadow: inset 3px 0 0 0 var(--accent), 0 0 0 1px var(--accent-line), 0 0 18px var(--accent-glow);
+    }
+    .v-num {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-hi);
+      min-width: 24px;
+      text-align: right;
+      margin-top: 5px;
+      user-select: none;
+    }
+    .v-body { flex: 1; min-width: 0; }
+    .v-tag {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 1px 6px;
+      border-radius: 5px;
+      background-color: var(--accent-soft);
+      color: var(--accent-hi);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      vertical-align: middle;
+    }
+    .search-hit {
+      background-color: var(--accent-soft);
+      color: var(--accent-hi);
+      border-radius: 4px;
+      padding: 0 2px;
+      font-weight: 700;
+    }
+
+    .hl-yellow { background-color: var(--hl-yellow); }
+    .hl-teal { background-color: var(--hl-teal); }
+    .hl-green { background-color: var(--hl-green); }
+    .hl-blue { background-color: var(--hl-blue); }
+    .hl-rose { background-color: var(--hl-rose); }
+
+    /* Inline Verse Action Toolbar & Note Editor */
+    .v-toolbar {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      margin: 5px 4px 10px 26px;
+      padding: 10px;
+      border-radius: 12px;
+      background-color: var(--surface);
+      border: 1px solid var(--border-hi);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .v-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    .swatch {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 0, 0, 0.25);
+    }
+    .swatch.is-on { outline: 2px solid var(--text); outline-offset: 2px; }
+    .sw-yellow { background: #eab308; }
+    .sw-teal { background: #14b8a6; }
+    .sw-green { background: #22c55e; }
+    .sw-blue { background: #3b82f6; }
+    .sw-rose { background: #f43f5e; }
+
+    .mini-btn {
+      padding: 6px 10px;
+      border-radius: 8px;
+      background-color: var(--elev);
+      border: 1px solid var(--border-hi);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .mini-btn:hover { background-color: var(--hover); }
+    .mini-btn.is-acc {
+      background-color: var(--accent-soft);
+      border-color: var(--accent-line);
+      color: var(--accent-hi);
+    }
+    .mini-btn.is-danger {
+      color: var(--err-text);
+      border-color: var(--err-border);
+    }
+
+    .v-note-box {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      margin: 0 4px 10px 26px;
+      padding: 11px;
+      border-radius: 11px;
+      background-color: var(--surface);
+      border: 1px solid var(--accent-line);
+    }
+    .note-area {
+      width: 100%;
+      min-height: 76px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background-color: var(--elev);
+      border: 1px solid var(--border-hi);
+      color: var(--text);
+      font-size: 13px;
+      resize: vertical;
+      outline: none;
+    }
+    .note-area:focus { border-color: var(--accent); }
+
+    /* Bottom Chapter Cards */
+    .chapter-foot {
+      margin-top: 28px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .foot-card {
+      padding: 12px 14px;
+      border-radius: 12px;
+      background-color: var(--surface);
+      border: 1px solid var(--border-hi);
+      color: var(--text);
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+    .foot-card.is-right { text-align: right; align-items: flex-end; }
+    .foot-card:hover:not(:disabled) { border-color: var(--accent-line); background-color: var(--hover); }
+    .foot-sub {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+    .foot-ref {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent-hi);
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* =========================================================================
+       4. FIXED BOTTOM AUDIO PLAYER DOCK (z-index: 150)
+       ========================================================================= */
+    .audio-dock {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 150;
+      background-color: var(--surface);
+      border-top: 1px solid var(--border-hi);
+      box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.38);
+    }
+    .audio-inner {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 8px 12px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .audio-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .transport { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .tr-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background-color: var(--elev);
+      border: 1px solid var(--border-hi);
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .tr-btn:hover { background-color: var(--hover); color: var(--text); }
+    .play-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: var(--accent);
+      color: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 12px var(--accent-glow);
+    }
+    .audio-meta { flex: 1; min-width: 0; overflow: hidden; }
+    .audio-l1 {
+      min-width: 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .audio-l2 {
+      min-width: 0;
+      font-size: 11px;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-top: 1px;
+    }
+    .mic-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 32px;
+      padding: 0 11px;
+      border-radius: 9px;
+      background-color: var(--accent-soft);
+      border: 1px solid var(--accent-line);
+      color: var(--accent-hi);
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .mic-btn:hover { background-color: var(--hover); }
+    .prog-track {
+      flex: 1;
+      min-width: 0;
+      height: 6px;
+      border-radius: 999px;
+      background-color: var(--elev);
+      overflow: hidden;
+    }
+    .prog-fill {
+      height: 100%;
+      width: 0%;
+      background-color: var(--accent);
+      transition: width 0.14s linear;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin { animation: spin 0.9s linear infinite; }
+
+    /* =========================================================================
+       5. THREE CENTERED VIEWPORT-SAFE MODALS (z-index: 2500)
+       ========================================================================= */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 2500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(4px);
+    }
+    .modal-box {
+      width: min(440px, calc(100vw - 2rem));
+      max-height: calc(100dvh - 2rem);
+      overflow-y: auto;
+      background-color: var(--surface);
+      border: 1px solid var(--border-hi);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-head {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background-color: var(--surface);
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .modal-head h2 { margin: 0; font-size: 15px; font-weight: 700; }
+    .close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background-color: var(--elev);
+      color: var(--text);
+      font-size: 20px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .close-btn:hover { background-color: var(--hover); }
+    .modal-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+    .modal-foot {
+      position: sticky;
+      bottom: 0;
+      background-color: var(--surface);
+      padding: 11px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+    }
+    .lbl {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .seg-btn {
+      padding: 8px 8px;
+      border-radius: 9px;
+      background-color: var(--elev);
+      border: 1px solid var(--border-hi);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+    }
+    .seg-btn:hover { background-color: var(--hover); color: var(--text); }
+    .seg-btn.is-active {
+      background-color: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent-hi);
+    }
+
+    .book-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background-color: var(--elev);
+      overflow: hidden;
+    }
+    .book-btn {
+      width: 100%;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: left;
+    }
+    .book-btn:hover { background-color: var(--hover); }
+    .ch-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 5px;
+      padding: 8px;
+      background-color: var(--surface);
+      border-top: 1px solid var(--border);
+    }
+    .ch-btn {
+      height: 32px;
+      border-radius: 7px;
+      background-color: var(--elev);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .ch-btn:hover { background-color: var(--hover); color: var(--text); }
+    .ch-btn.is-cur { background-color: var(--accent); color: #ffffff; }
+
+    .card {
+      padding: 11px 12px;
+      border-radius: 11px;
+      background-color: var(--elev);
+      border: 1px solid var(--border);
+    }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background-color: var(--elev);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .toggle-row input { width: 17px; height: 17px; accent-color: var(--accent); }
+    .primary-btn {
+      padding: 9px 18px;
+      border-radius: 10px;
+      background-color: var(--accent);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .primary-btn:hover { opacity: 0.92; }
+
+    /* Color Filter Chips in Saved Panel */
+    .color-filter-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .color-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background-color: var(--elev);
+      border: 1px solid var(--border-hi);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .color-chip.is-active {
+      background-color: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent-hi);
+    }
+    .color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* Voice Diagnostics & Optional Custom Key */
+    .diag-box {
+      padding: 10px 12px;
+      border-radius: 10px;
+      background-color: var(--elev);
+      border: 1px solid var(--border-hi);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .diag-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .diag-status {
+      font-size: 12px;
+      line-height: 1.45;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      word-break: break-word;
+    }
+    .diag-status.is-ok {
+      background-color: var(--ok-bg);
+      border-color: var(--ok-border);
+      color: var(--ok-text);
+    }
+    .diag-status.is-err {
+      background-color: var(--err-bg);
+      border-color: var(--err-border);
+      color: var(--err-text);
+    }
+    .key-details {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 11px;
+      background-color: var(--elev);
+    }
+    .key-details summary {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+    }
+    .key-details[open] summary {
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    /* Reading Plan Items */
+    .plan-prog-bar {
+      height: 5px;
+      border-radius: 999px;
+      background-color: var(--surface);
+      overflow: hidden;
+      margin: 6px 0 8px;
+    }
+    .plan-prog-fill {
+      height: 100%;
+      background-color: var(--accent);
+      transition: width 0.2s ease;
+    }
+    .plan-step {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 6px 0;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .plan-step label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      flex: 1;
+      min-width: 0;
+    }
+    .plan-step input { width: 16px; height: 16px; accent-color: var(--accent); flex-shrink: 0; }
+    .plan-step.is-done span { text-decoration: line-through; color: var(--muted); }
+
+    /* Toast Banner */
+    .toast-box {
+      position: fixed;
+      bottom: 118px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 3000;
+      background-color: var(--surface);
+      border: 1px solid var(--accent-line);
+      color: var(--text);
+      padding: 9px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: var(--shadow);
+      max-width: calc(100vw - 24px);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hidden Fallback HTML Audio Element if Web Audio Fails -->
+  <audio id="ttsFallbackAudio" playsinline preload="auto" class="hidden"></audio>
+
+  <!-- =========================================================================
+       1. STICKY TOP HEADER (Pre-Rendered for Instant First Paint)
+       ========================================================================= -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="topbar-row">
+        <div class="brand-group">
+          <span class="brand-mark" title="Lumina Bible Study" aria-hidden="true">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+            </svg>
+          </span>
+          <button id="btnBookPicker" type="button" class="pill-btn" aria-label="Choose Book and Chapter">
+            <span id="hdrChapter" class="trunc">John 3</span>
+            <span aria-hidden="true" style="color:var(--accent-hi);font-size:11px;">&#9662;</span>
+          </button>
+        </div>
+
+        <div class="right-controls">
+          <select id="selTranslation" class="ctrl-select" aria-label="Bible Translation">
+            <option value="web">WEB</option>
+            <option value="kjv">KJV</option>
+            <option value="asv">ASV</option>
+            <option value="bbe">BBE</option>
+          </select>
+          <button id="btnToggleSearch" type="button" class="pill-btn icon-btn" title="Search &amp; Jump" aria-label="Search and Jump">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="7"/>
+              <path stroke-linecap="round" d="M20 20l-3.5-3.5"/>
+            </svg>
+          </button>
+          <button id="btnAppearance" type="button" class="pill-btn aa-btn" aria-label="Appearance and Study">Aa</button>
+        </div>
+      </div>
+
+      <!-- Collapsible Quick Reference Jump & In-Chapter Word Filter -->
+      <div id="searchDrawer" class="search-drawer hidden">
+        <form id="jumpForm" class="search-row">
+          <input id="jumpInput" type="text" class="text-input" placeholder="Jump to ref (e.g. John 3:16, Ps 23, Rom 8, Gen 1)..." aria-label="Jump to reference" />
+          <button type="submit" class="go-btn">Go</button>
+        </form>
+        <div class="search-row">
+          <input id="chapterSearchInput" type="text" class="text-input" placeholder="Filter words or phrases in this chapter..." aria-label="Filter in current chapter" />
+          <button id="btnClearFilter" type="button" class="mini-btn hidden" style="height:36px;">Clear</button>
+        </div>
+        <div id="filterMeta" class="filter-meta hidden"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       2. MAIN SCRIPTURE READER (Pre-Rendered John 3:1-21 for Instant Paint)
+       ========================================================================= -->
+  <main class="reader">
+    <div class="badges">
+      <span id="badgeTestament" class="badge badge-acc">New Testament</span>
+      <span id="badgeTrans" class="badge badge-dim">WEB</span>
+    </div>
+
+    <div class="chapter-head">
+      <h1 id="chapterTitle" class="chapter-title">John 3</h1>
+      <div class="head-actions">
+        <button id="btnListenChapter" type="button" class="listen-btn">
+          <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <span id="lblListen">Listen to Chapter</span>
+        </button>
+        <button id="btnPrevTop" type="button" class="nav-btn">&#8249; Prev</button>
+        <button id="btnNextTop" type="button" class="nav-btn">Next &#8250;</button>
+      </div>
+    </div>
+
+    <div id="statusBanner" class="status-banner hidden"></div>
+
+    <article id="versesList" class="verses-list font-serif">
+      <div><div class="verse-row" data-vnum="1"><span class="v-num">1</span><div class="v-body">There was a Pharisee named Nicodemus, a respected leader on the Jewish ruling council.</div></div></div>
+      <div><div class="verse-row" data-vnum="2"><span class="v-num">2</span><div class="v-body">He came to Jesus at night and acknowledged Him as a teacher sent from God because of the miraculous signs He performed.</div></div></div>
+      <div><div class="verse-row" data-vnum="3"><span class="v-num">3</span><div class="v-body">Jesus told him that no one can see the kingdom of God without being born anew from above.</div></div></div>
+      <div><div class="verse-row" data-vnum="4"><span class="v-num">4</span><div class="v-body">Nicodemus asked how a grown person could possibly be born a second time or re-enter their mother’s womb.</div></div></div>
+      <div><div class="verse-row" data-vnum="5"><span class="v-num">5</span><div class="v-body">Jesus replied that entering the kingdom of God requires being born of water and the Spirit.</div></div></div>
+      <div><div class="verse-row" data-vnum="6"><span class="v-num">6</span><div class="v-body">Physical birth produces physical life, whereas the Spirit gives birth to spiritual life.</div></div></div>
+      <div><div class="verse-row" data-vnum="7"><span class="v-num">7</span><div class="v-body">So do not be surprised when I tell you that you must be born from above.</div></div></div>
+      <div><div class="verse-row" data-vnum="8"><span class="v-num">8</span><div class="v-body">The wind blows wherever it wills; you hear its sound yet cannot trace where it begins or goes, and so it is with everyone born of the Spirit.</div></div></div>
+      <div><div class="verse-row" data-vnum="9"><span class="v-num">9</span><div class="v-body">Nicodemus asked in astonishment how such things could happen.</div></div></div>
+      <div><div class="verse-row" data-vnum="10"><span class="v-num">10</span><div class="v-body">Jesus answered, asking how a leading teacher of Israel could fail to understand these truths.</div></div></div>
+      <div><div class="verse-row" data-vnum="11"><span class="v-num">11</span><div class="v-body">He testified that they spoke from firsthand knowledge, yet people still refused to receive their witness.</div></div></div>
+      <div><div class="verse-row" data-vnum="12"><span class="v-num">12</span><div class="v-body">If you do not believe when I speak of earthly realities, how will you believe when I speak of heavenly things?</div></div></div>
+      <div><div class="verse-row" data-vnum="13"><span class="v-num">13</span><div class="v-body">No one has gone up into heaven except the One who came down from heaven—the Son of Man.</div></div></div>
+      <div><div class="verse-row" data-vnum="14"><span class="v-num">14</span><div class="v-body">Just as Moses lifted up the bronze serpent in the wilderness, so the Son of Man must be lifted up,</div></div></div>
+      <div><div class="verse-row" data-vnum="15"><span class="v-num">15</span><div class="v-body">so that everyone who places their trust in Him may receive eternal life.</div></div></div>
+      <div><div class="verse-row" data-vnum="16"><span class="v-num">16</span><div class="v-body">For God loved the world so deeply that He gave His one and only Son, so that whoever trusts in Him will not perish but have eternal life.</div></div></div>
+      <div><div class="verse-row" data-vnum="17"><span class="v-num">17</span><div class="v-body">God did not send His Son into the world to condemn it, but so that the world might be rescued through Him.</div></div></div>
+      <div><div class="verse-row" data-vnum="18"><span class="v-num">18</span><div class="v-body">Whoever trusts in Him is not condemned, while anyone who refuses to believe stands condemned already for rejecting God’s only Son.</div></div></div>
+      <div><div class="verse-row" data-vnum="19"><span class="v-num">19</span><div class="v-body">This is the verdict: light has entered the world, yet people loved darkness rather than light because their deeds were evil.</div></div></div>
+      <div><div class="verse-row" data-vnum="20"><span class="v-num">20</span><div class="v-body">Everyone who practices evil avoids the light for fear that their actions will be exposed.</div></div></div>
+      <div><div class="verse-row" data-vnum="21"><span class="v-num">21</span><div class="v-body">Yet whoever lives by the truth steps gladly into the light, showing clearly that what they have done has been accomplished in God.</div></div></div>
+    </article>
+
+    <div class="chapter-foot">
+      <button id="btnPrevBottom" type="button" class="foot-card">
+        <span class="foot-sub">&#8249; Previous Chapter</span>
+        <span id="lblPrevBottom" class="foot-ref">John 2</span>
+      </button>
+      <button id="btnNextBottom" type="button" class="foot-card is-right">
+        <span class="foot-sub">Next Chapter &#8250;</span>
+        <span id="lblNextBottom" class="foot-ref">John 4</span>
+      </button>
+    </div>
+  </main>
+
+  <!-- =========================================================================
+       3. FIXED BOTTOM AUDIO PLAYER DOCK (z-index: 150)
+       ========================================================================= -->
+  <section class="audio-dock" aria-label="AI Voice Bible Reader">
+    <div class="audio-inner">
+      <div class="audio-row">
+        <div class="transport">
+          <button id="btnAudioPrev" type="button" class="tr-btn" title="Previous Verse" aria-label="Previous Verse">
+            <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+          </button>
+          <button id="btnAudioPlay" type="button" class="play-btn" title="Play or Pause" aria-label="Play or Pause">
+            <svg id="icoPlay" width="18" height="18" fill="currentColor" viewBox="0 0 24 24" style="margin-left:2px;"><path d="M8 5v14l11-7z"/></svg>
+            <svg id="icoPause" width="18" height="18" fill="currentColor" viewBox="0 0 24 24" class="hidden"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            <svg id="icoLoad" width="18" height="18" fill="none" viewBox="0 0 24 24" class="spin hidden">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" opacity="0.3"></circle>
+              <path fill="currentColor" d="M12 3a9 9 0 019 9h-3a6 6 0 00-6-6V3z"></path>
+            </svg>
+          </button>
+          <button id="btnAudioNext" type="button" class="tr-btn" title="Next Verse" aria-label="Next Verse">
+            <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+          </button>
+          <button id="btnAudioStop" type="button" class="tr-btn" title="Stop" aria-label="Stop">
+            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+          </button>
+        </div>
+
+        <div class="audio-meta">
+          <div id="audioL1" class="audio-l1">Ready to read John 3</div>
+          <div id="audioL2" class="audio-l2">AI Voice (Charon) • Smooth Flow</div>
+        </div>
+      </div>
+
+      <div class="audio-row">
+        <select id="selDockSpeed" class="ctrl-select" style="height:32px;font-size:12px;" aria-label="Playback Speed">
+          <option value="0.75">0.75x</option>
+          <option value="0.9">0.9x</option>
+          <option value="1" selected>1.0x</option>
+          <option value="1.15">1.15x</option>
+          <option value="1.25">1.25x</option>
+          <option value="1.5">1.5x</option>
+        </select>
+
+        <button id="btnVoiceModal" type="button" class="mic-btn" aria-label="Voice Settings">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+          </svg>
+          <span>Voice</span>
+        </button>
+
+        <div class="prog-track">
+          <div id="audioProg" class="prog-fill"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       4. CENTERED BOOK & CHAPTER PICKER MODAL (#bookModal)
+       ========================================================================= -->
+  <div id="bookModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="bookModalTitle">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2 id="bookModalTitle">Choose Book &amp; Chapter</h2>
+        <button id="btnCloseBookModal" type="button" class="close-btn" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="testamentTabs" class="grid-2">
+          <button type="button" data-testament="OT" class="seg-btn">Old Testament (39)</button>
+          <button type="button" data-testament="NT" class="seg-btn is-active">New Testament (27)</button>
+        </div>
+        <input id="bookSearch" type="text" class="text-input" placeholder="Search all 66 books..." aria-label="Search books" />
+        <div id="bookList" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       5. CENTERED AI VOICE & AUDIO SETTINGS MODAL (#voiceModal)
+       ========================================================================= -->
+  <div id="voiceModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="voiceModalTitle">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2 id="voiceModalTitle">AI Voice &amp; Audio Settings</h2>
+        <button id="btnCloseVoiceModal" type="button" class="close-btn" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div>
+          <div class="lbl"><span>Voice Engine</span></div>
+          <div id="engineGroup" class="grid-2">
+            <button type="button" data-engine="ai" class="seg-btn is-active">AI Voice (Gemini)</button>
+            <button type="button" data-engine="browser" class="seg-btn">Device Voice (Offline)</button>
+          </div>
+        </div>
+
+        <div>
+          <label for="selAiVoice" class="lbl"><span>AI Voice Persona</span></label>
+          <select id="selAiVoice" class="ctrl-select" style="width:100%;">
+            <option value="Charon">Charon — Deep &amp; Reverent</option>
+            <option value="Kore">Kore — Warm &amp; Clear</option>
+            <option value="Aoede">Aoede — Gentle &amp; Lyrical</option>
+            <option value="Fenrir">Fenrir — Rich &amp; Dramatic</option>
+            <option value="Puck">Puck — Bright &amp; Expressive</option>
+            <option value="Gacrux">Gacrux — Mature &amp; Steady</option>
+            <option value="Sulafat">Sulafat — Warm</option>
+            <option value="Vindemiatrix">Vindemiatrix — Gentle</option>
+            <option value="Achernar">Achernar — Soft</option>
+            <option value="Algieba">Algieba — Smooth</option>
+            <option value="Iapetus">Iapetus — Clear</option>
+            <option value="Sadaltager">Sadaltager — Knowledgeable</option>
+            <option value="Orus">Orus — Firm</option>
+          </select>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label for="selAiStyle" class="lbl"><span>Narration Style</span></label>
+            <select id="selAiStyle" class="ctrl-select" style="width:100%;">
+              <option value="reverent">Reverent &amp; Calm</option>
+              <option value="storytelling">Warm Storytelling</option>
+              <option value="study">Clear Study Pace</option>
+            </select>
+          </div>
+          <div>
+            <label for="selFlowMode" class="lbl"><span>Flow Mode</span></label>
+            <select id="selFlowMode" class="ctrl-select" style="width:100%;">
+              <option value="smooth">Smooth Flow (Continuous)</option>
+              <option value="verse">Study Pause (Verse-by-Verse)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label for="selModalSpeed" class="lbl"><span>Playback Speed</span></label>
+          <select id="selModalSpeed" class="ctrl-select" style="width:100%;">
+            <option value="0.75">0.75x</option>
+            <option value="0.9">0.9x</option>
+            <option value="1" selected>1.0x</option>
+            <option value="1.15">1.15x</option>
+            <option value="1.25">1.25x</option>
+            <option value="1.5">1.5x</option>
+          </select>
+        </div>
+
+        <label for="chkAutoNext" class="toggle-row">
+          <span>Auto-Next Chapter</span>
+          <input id="chkAutoNext" type="checkbox" checked />
+        </label>
+
+        <div>
+          <label for="selBrowserVoice" class="lbl"><span>Device Voice</span></label>
+          <select id="selBrowserVoice" class="ctrl-select" style="width:100%;">
+            <option value="">Auto (Best Natural English Voice)</option>
+          </select>
+        </div>
+
+        <!-- Live Voice Test & Diagnostics -->
+        <div class="diag-box">
+          <div class="diag-row">
+            <span style="font-size:12px;font-weight:700;">Voice Diagnostics</span>
+            <div style="display:flex;gap:6px;">
+              <button id="btnTestAiVoice" type="button" class="mini-btn is-acc">Test AI Voice</button>
+              <button id="btnTestBrowserVoice" type="button" class="mini-btn">Test Device</button>
+            </div>
+          </div>
+          <div id="voiceDiagStatus" class="diag-status">Tap "Test AI Voice" to verify Gemini TTS playback.</div>
+        </div>
+
+        <details class="key-details">
+          <summary>Gemini API Key (for AI Voice)</summary>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.45;">Get a free key at <a href="https://aistudio.google.com/apikey" style="color:var(--accent-hi);">aistudio.google.com/apikey</a>, then paste it here. It's stored only on this phone.</div>
+          <div style="display:flex;gap:6px;">
+            <input id="inpCustomKey" type="password" class="text-input" placeholder="Paste Gemini API key..." autocomplete="off" />
+            <button id="btnClearCustomKey" type="button" class="mini-btn" style="flex-shrink:0;">Clear</button>
+          </div>
+        </details>
+      </div>
+      <div class="modal-foot">
+        <button id="btnDoneVoiceModal" type="button" class="primary-btn">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       6. CENTERED STUDY & APPEARANCE MODAL (#studyModal)
+       ========================================================================= -->
+  <div id="studyModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="studyModalTitle">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2 id="studyModalTitle">Study &amp; Appearance</h2>
+        <button id="btnCloseStudyModal" type="button" class="close-btn" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="studyTabs" class="grid-4">
+          <button type="button" data-stab="display" class="seg-btn is-active">Display</button>
+          <button type="button" data-stab="saved" class="seg-btn">Saved</button>
+          <button type="button" data-stab="notes" class="seg-btn">Notes</button>
+          <button type="button" data-stab="plans" class="seg-btn">Plans</button>
+        </div>
+
+        <!-- Display Panel -->
+        <div id="panelDisplay" style="display:flex;flex-direction:column;gap:12px;">
+          <div>
+            <div class="lbl"><span>Reading Theme</span></div>
+            <div id="themeGroup" class="grid-3">
+              <button type="button" data-theme="dark" class="seg-btn is-active">Dark</button>
+              <button type="button" data-theme="sepia" class="seg-btn">Sepia</button>
+              <button type="button" data-theme="light" class="seg-btn">Light</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="lbl"><span>Font Family</span></div>
+            <div id="fontGroup" class="grid-2">
+              <button type="button" data-font="serif" class="seg-btn is-active" style="font-family:Georgia,serif;">Serif</button>
+              <button type="button" data-font="sans" class="seg-btn">Sans</button>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div>
+              <div class="lbl"><span>Font Size</span><span id="lblFontSize" style="color:var(--accent-hi);">18px</span></div>
+              <div class="grid-2">
+                <button id="btnFontMinus" type="button" class="seg-btn">A &minus;</button>
+                <button id="btnFontPlus" type="button" class="seg-btn">A +</button>
+              </div>
+            </div>
+            <div>
+              <div class="lbl"><span>Line Spacing</span></div>
+              <button id="btnLineSpacing" type="button" class="seg-btn" style="width:100%;">Relaxed (1.75)</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="lbl"><span>Study Backup (JSON)</span></div>
+            <div class="grid-2">
+              <button id="btnExportJson" type="button" class="seg-btn">Export JSON</button>
+              <label for="inpImportJson" class="seg-btn" style="cursor:pointer;">Import JSON</label>
+              <input id="inpImportJson" type="file" accept=".json,application/json" class="hidden" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Saved Bookmarks & Highlights Panel (with Type & Color Filters) -->
+        <div id="panelSaved" class="hidden" style="display:flex;flex-direction:column;gap:8px;">
+          <div id="savedFilterGroup" class="grid-3">
+            <button type="button" data-sfilter="all" class="seg-btn is-active">All</button>
+            <button type="button" data-sfilter="bookmarks" class="seg-btn">Bookmarks</button>
+            <button type="button" data-sfilter="highlights" class="seg-btn">Highlights</button>
+          </div>
+          <div id="savedColorGroup" class="color-filter-row">
+            <button type="button" data-scolor="all" class="color-chip is-active">All Colors</button>
+            <button type="button" data-scolor="yellow" class="color-chip"><span class="color-dot sw-yellow"></span>Yellow</button>
+            <button type="button" data-scolor="teal" class="color-chip"><span class="color-dot sw-teal"></span>Teal</button>
+            <button type="button" data-scolor="green" class="color-chip"><span class="color-dot sw-green"></span>Green</button>
+            <button type="button" data-scolor="blue" class="color-chip"><span class="color-dot sw-blue"></span>Blue</button>
+            <button type="button" data-scolor="rose" class="color-chip"><span class="color-dot sw-rose"></span>Rose</button>
+          </div>
+          <div id="savedList" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+
+        <!-- Notes Panel -->
+        <div id="panelNotes" class="hidden" style="display:flex;flex-direction:column;gap:8px;"></div>
+
+        <!-- Reading Plans Panel -->
+        <div id="panelPlans" class="hidden" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </div>
+      <div class="modal-foot">
+        <button id="btnDoneStudyModal" type="button" class="primary-btn">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Non-Blocking Toast Banner -->
+  <div id="toastBox" class="toast-box hidden" aria-live="polite"></div>
+
+  <!-- =========================================================================
+       APPLICATION SCRIPT
+       CRITICAL: Top-level global `const apiKey = "";` for Canvas runtime injection
+       ========================================================================= -->
+  <script>
+    const apiKey = (window.AndroidBridge && window.AndroidBridge.getBuiltInKey) ? String(window.AndroidBridge.getBuiltInKey() || "") : "";
+
+    (function () {
+      'use strict';
+
+      /* -----------------------------------------------------------------------
+         1. SAFE STORAGE HELPER (localStorage + In-Memory Fallback)
+         ----------------------------------------------------------------------- */
+      const memStore = {};
+      function safeGet(key) {
+        try {
+          return window.localStorage.getItem(key);
+        } catch (e) {
+          return Object.prototype.hasOwnProperty.call(memStore, key) ? memStore[key] : null;
+        }
+      }
+      function safeSet(key, val) {
+        memStore[key] = String(val);
+        try {
+          window.localStorage.setItem(key, String(val));
+        } catch (e) {}
+      }
+
+      const STORE_KEY = 'lumina_bible_state_v12';
+      const CACHE_KEY = 'lumina_bible_cache_v12';
+      const CUSTOM_KEY_STORE = 'lumina_custom_gemini_api_key';
+      const $ = (id) => document.getElementById(id);
+
+      function getCustomApiKey() {
+        return (safeGet(CUSTOM_KEY_STORE) || '').trim();
+      }
+
+      /* -----------------------------------------------------------------------
+         2. 66 BOOKS METADATA, BUILT-IN OFFLINE PASSAGES & READING PLANS
+         ----------------------------------------------------------------------- */
+      const BOOKS = [
+        { name: 'Genesis', ch: 50, t: 'OT', a: ['gen', 'ge', 'gn'] },
+        { name: 'Exodus', ch: 40, t: 'OT', a: ['exo', 'ex', 'exod'] },
+        { name: 'Leviticus', ch: 27, t: 'OT', a: ['lev', 'lv'] },
+        { name: 'Numbers', ch: 36, t: 'OT', a: ['num', 'nm', 'nu'] },
+        { name: 'Deuteronomy', ch: 34, t: 'OT', a: ['deut', 'dt', 'deu'] },
+        { name: 'Joshua', ch: 24, t: 'OT', a: ['josh', 'jos'] },
+        { name: 'Judges', ch: 21, t: 'OT', a: ['judg', 'jdg'] },
+        { name: 'Ruth', ch: 4, t: 'OT', a: ['ru', 'rut'] },
+        { name: '1 Samuel', ch: 31, t: 'OT', a: ['1sam', '1sa'] },
+        { name: '2 Samuel', ch: 24, t: 'OT', a: ['2sam', '2sa'] },
+        { name: '1 Kings', ch: 22, t: 'OT', a: ['1kgs', '1ki'] },
+        { name: '2 Kings', ch: 25, t: 'OT', a: ['2kgs', '2ki'] },
+        { name: '1 Chronicles', ch: 29, t: 'OT', a: ['1chr', '1ch'] },
+        { name: '2 Chronicles', ch: 36, t: 'OT', a: ['2chr', '2ch'] },
+        { name: 'Ezra', ch: 10, t: 'OT', a: ['ezr'] },
+        { name: 'Nehemiah', ch: 13, t: 'OT', a: ['neh', 'ne'] },
+        { name: 'Esther', ch: 10, t: 'OT', a: ['est', 'es'] },
+        { name: 'Job', ch: 42, t: 'OT', a: ['jb'] },
+        { name: 'Psalms', ch: 150, t: 'OT', a: ['ps', 'psa', 'psalm', 'psalms'] },
+        { name: 'Proverbs', ch: 31, t: 'OT', a: ['prov', 'pro', 'pr'] },
+        { name: 'Ecclesiastes', ch: 12, t: 'OT', a: ['eccl', 'ecc'] },
+        { name: 'Song of Solomon', ch: 8, t: 'OT', a: ['song', 'sos', 'sng'] },
+        { name: 'Isaiah', ch: 66, t: 'OT', a: ['isa', 'is'] },
+        { name: 'Jeremiah', ch: 52, t: 'OT', a: ['jer', 'je'] },
+        { name: 'Lamentations', ch: 5, t: 'OT', a: ['lam', 'la'] },
+        { name: 'Ezekiel', ch: 48, t: 'OT', a: ['ezek', 'eze'] },
+        { name: 'Daniel', ch: 12, t: 'OT', a: ['dan', 'da'] },
+        { name: 'Hosea', ch: 14, t: 'OT', a: ['hos', 'ho'] },
+        { name: 'Joel', ch: 3, t: 'OT', a: ['jl'] },
+        { name: 'Amos', ch: 9, t: 'OT', a: ['am'] },
+        { name: 'Obadiah', ch: 1, t: 'OT', a: ['obad', 'ob'] },
+        { name: 'Jonah', ch: 4, t: 'OT', a: ['jon'] },
+        { name: 'Micah', ch: 7, t: 'OT', a: ['mic', 'mi'] },
+        { name: 'Nahum', ch: 3, t: 'OT', a: ['nah', 'na'] },
+        { name: 'Habakkuk', ch: 3, t: 'OT', a: ['hab'] },
+        { name: 'Zephaniah', ch: 3, t: 'OT', a: ['zeph', 'zep'] },
+        { name: 'Haggai', ch: 2, t: 'OT', a: ['hag'] },
+        { name: 'Zechariah', ch: 14, t: 'OT', a: ['zech', 'zec'] },
+        { name: 'Malachi', ch: 4, t: 'OT', a: ['mal'] },
+        { name: 'Matthew', ch: 28, t: 'NT', a: ['matt', 'mat', 'mt'] },
+        { name: 'Mark', ch: 16, t: 'NT', a: ['mrk', 'mk'] },
+        { name: 'Luke', ch: 24, t: 'NT', a: ['luk', 'lk'] },
+        { name: 'John', ch: 21, t: 'NT', a: ['jhn', 'jn'] },
+        { name: 'Acts', ch: 28, t: 'NT', a: ['act', 'ac'] },
+        { name: 'Romans', ch: 16, t: 'NT', a: ['rom', 'ro'] },
+        { name: '1 Corinthians', ch: 16, t: 'NT', a: ['1cor', '1co'] },
+        { name: '2 Corinthians', ch: 13, t: 'NT', a: ['2cor', '2co'] },
+        { name: 'Galatians', ch: 6, t: 'NT', a: ['gal', 'ga'] },
+        { name: 'Ephesians', ch: 6, t: 'NT', a: ['eph', 'ep'] },
+        { name: 'Philippians', ch: 4, t: 'NT', a: ['phil', 'php'] },
+        { name: 'Colossians', ch: 4, t: 'NT', a: ['col'] },
+        { name: '1 Thessalonians', ch: 5, t: 'NT', a: ['1thess', '1th'] },
+        { name: '2 Thessalonians', ch: 3, t: 'NT', a: ['2thess', '2th'] },
+        { name: '1 Timothy', ch: 6, t: 'NT', a: ['1tim', '1ti'] },
+        { name: '2 Timothy', ch: 4, t: 'NT', a: ['2tim', '2ti'] },
+        { name: 'Titus', ch: 3, t: 'NT', a: ['tit'] },
+        { name: 'Philemon', ch: 1, t: 'NT', a: ['phlm', 'phm'] },
+        { name: 'Hebrews', ch: 13, t: 'NT', a: ['heb'] },
+        { name: 'James', ch: 5, t: 'NT', a: ['jas', 'jam'] },
+        { name: '1 Peter', ch: 5, t: 'NT', a: ['1pet', '1pe'] },
+        { name: '2 Peter', ch: 3, t: 'NT', a: ['2pet', '2pe'] },
+        { name: '1 John', ch: 5, t: 'NT', a: ['1jn', '1jo'] },
+        { name: '2 John', ch: 1, t: 'NT', a: ['2jn', '2jo'] },
+        { name: '3 John', ch: 1, t: 'NT', a: ['3jn', '3jo'] },
+        { name: 'Jude', ch: 1, t: 'NT', a: ['jud'] },
+        { name: 'Revelation', ch: 22, t: 'NT', a: ['rev', 're'] }
+      ];
+
+      const OFFLINE = {
+        'John|3': [
+          { verse: 1, text: 'There was a Pharisee named Nicodemus, a respected leader on the Jewish ruling council.' },
+          { verse: 2, text: 'He came to Jesus at night and acknowledged Him as a teacher sent from God because of the miraculous signs He performed.' },
+          { verse: 3, text: 'Jesus told him that no one can see the kingdom of God without being born anew from above.' },
+          { verse: 4, text: 'Nicodemus asked how a grown person could possibly be born a second time or re-enter their mother’s womb.' },
+          { verse: 5, text: 'Jesus replied that entering the kingdom of God requires being born of water and the Spirit.' },
+          { verse: 6, text: 'Physical birth produces physical life, whereas the Spirit gives birth to spiritual life.' },
+          { verse: 7, text: 'So do not be surprised when I tell you that you must be born from above.' },
+          { verse: 8, text: 'The wind blows wherever it wills; you hear its sound yet cannot trace where it begins or goes, and so it is with everyone born of the Spirit.' },
+          { verse: 9, text: 'Nicodemus asked in astonishment how such things could happen.' },
+          { verse: 10, text: 'Jesus answered, asking how a leading teacher of Israel could fail to understand these truths.' },
+          { verse: 11, text: 'He testified that they spoke from firsthand knowledge, yet people still refused to receive their witness.' },
+          { verse: 12, text: 'If you do not believe when I speak of earthly realities, how will you believe when I speak of heavenly things?' },
+          { verse: 13, text: 'No one has gone up into heaven except the One who came down from heaven—the Son of Man.' },
+          { verse: 14, text: 'Just as Moses lifted up the bronze serpent in the wilderness, so the Son of Man must be lifted up,' },
+          { verse: 15, text: 'so that everyone who places their trust in Him may receive eternal life.' },
+          { verse: 16, text: 'For God loved the world so deeply that He gave His one and only Son, so that whoever trusts in Him will not perish but have eternal life.' },
+          { verse: 17, text: 'God did not send His Son into the world to condemn it, but so that the world might be rescued through Him.' },
+          { verse: 18, text: 'Whoever trusts in Him is not condemned, while anyone who refuses to believe stands condemned already for rejecting God’s only Son.' },
+          { verse: 19, text: 'This is the verdict: light has entered the world, yet people loved darkness rather than light because their deeds were evil.' },
+          { verse: 20, text: 'Everyone who practices evil avoids the light for fear that their actions will be exposed.' },
+          { verse: 21, text: 'Yet whoever lives by the truth steps gladly into the light, showing clearly that what they have done has been accomplished in God.' }
+        ],
+        'Genesis|1': [
+          { verse: 1, text: 'In the very beginning, God created the heavens and the earth.' },
+          { verse: 2, text: 'The earth was unformed and empty, shrouded in darkness over the deep waters, while the Spirit of God hovered over the surface.' },
+          { verse: 3, text: 'God spoke, calling light into being, and light appeared.' },
+          { verse: 4, text: 'God saw that the light was good and separated the light from the darkness.' },
+          { verse: 5, text: 'He named the light Day and the darkness Night; evening passed and morning came, completing the first day.' },
+          { verse: 6, text: 'Then God commanded an expanse to form between the waters to divide the waters above from those below.' },
+          { verse: 7, text: 'So God shaped the expanse and separated the waters, and it stood just as He commanded.' },
+          { verse: 8, text: 'God named the expanse Sky; evening passed and morning came, completing the second day.' },
+          { verse: 9, text: 'God directed the waters beneath the sky to gather into one place so dry ground would emerge.' },
+          { verse: 10, text: 'He called the dry ground Land and the gathered waters Seas, and saw that it was good.' }
+        ],
+        'Psalms|23': [
+          { verse: 1, text: 'The Lord watches over me as my shepherd; because of Him I lack nothing.' },
+          { verse: 2, text: 'He lets me rest in lush green pastures and guides me beside calm, quiet waters.' },
+          { verse: 3, text: 'He renews my weary soul and leads me along right paths for the honor of His name.' },
+          { verse: 4, text: 'Even when I walk through the darkest valley, I will not fear harm, for You are with me; Your rod and staff bring me comfort.' },
+          { verse: 5, text: 'You spread a feast before me in full view of my adversaries, anoint my head with oil, and fill my cup until it overflows.' },
+          { verse: 6, text: 'Surely Your goodness and unfailing love will pursue me every day of my life, and I will dwell in the house of the Lord forever.' }
+        ],
+        'Proverbs|3': [
+          { verse: 1, text: 'My child, never forget my teaching, and guard my commands deep within your heart,' },
+          { verse: 2, text: 'for they will add length to your years and bring you lasting peace.' },
+          { verse: 3, text: 'Never let steadfast love and faithfulness leave you; bind them around your neck and engrave them on your heart.' },
+          { verse: 4, text: 'Then you will win favor and a good reputation in the eyes of both God and people.' },
+          { verse: 5, text: 'Trust in the Lord with all your heart, and do not rely solely on your own understanding.' },
+          { verse: 6, text: 'Acknowledge Him in all your ways, and He will make your paths straight.' }
+        ],
+        'John|1': [
+          { verse: 1, text: 'In the beginning the Word already existed; the Word was with God, and the Word was fully God.' },
+          { verse: 2, text: 'He was with God from the very beginning.' },
+          { verse: 3, text: 'Through Him everything was made, and nothing that exists was created apart from Him.' },
+          { verse: 4, text: 'In Him was life, and that life became the light of all humanity.' },
+          { verse: 5, text: 'The light shines steadily in the darkness, and the darkness has never been able to overcome it.' }
+        ],
+        'Romans|8': [
+          { verse: 1, text: 'Therefore, there is now no condemnation awaiting those who belong to Christ Jesus.' },
+          { verse: 2, text: 'For the law of the Spirit who gives life in Christ Jesus has set you free from the law of sin and death.' },
+          { verse: 28, text: 'And we know that in all things God works together for the good of those who love Him and are called according to His purpose.' },
+          { verse: 38, text: 'For I am fully convinced that neither death nor life, neither angels nor rulers, neither present troubles nor future fears,' },
+          { verse: 39, text: 'nor height nor depth nor anything else in all creation can ever separate us from the love of God revealed in Christ Jesus our Lord.' }
+        ]
+      };
+
+      const READING_PLANS = [
+        {
+          id: 'gospel-john',
+          title: 'Gospel of John',
+          desc: 'Encounter the life, signs, and teachings of Jesus.',
+          steps: [
+            { id: 'gj-1', book: 'John', chapter: 1, label: 'Day 1: John 1 — The Word Became Flesh' },
+            { id: 'gj-2', book: 'John', chapter: 3, label: 'Day 2: John 3 — Born of the Spirit' },
+            { id: 'gj-3', book: 'John', chapter: 4, label: 'Day 3: John 4 — Living Water' },
+            { id: 'gj-4', book: 'John', chapter: 10, label: 'Day 4: John 10 — The Good Shepherd' },
+            { id: 'gj-5', book: 'John', chapter: 14, label: 'Day 5: John 14 — The Way & Truth' },
+            { id: 'gj-6', book: 'John', chapter: 15, label: 'Day 6: John 15 — The True Vine' }
+          ]
+        },
+        {
+          id: 'psalms-comfort',
+          title: 'Psalms of Comfort',
+          desc: 'Prayers of peace, refuge, and steady trust in God.',
+          steps: [
+            { id: 'pc-1', book: 'Psalms', chapter: 23, label: 'Day 1: Psalm 23 — The Lord Is My Shepherd' },
+            { id: 'pc-2', book: 'Psalms', chapter: 27, label: 'Day 2: Psalm 27 — Light & Salvation' },
+            { id: 'pc-3', book: 'Psalms', chapter: 46, label: 'Day 3: Psalm 46 — Be Still and Know' },
+            { id: 'pc-4', book: 'Psalms', chapter: 91, label: 'Day 4: Psalm 91 — Shelter of the Most High' },
+            { id: 'pc-5', book: 'Psalms', chapter: 121, label: 'Day 5: Psalm 121 — My Help Comes from the Lord' }
+          ]
+        },
+        {
+          id: 'wisdom-proverbs',
+          title: 'Wisdom in Proverbs',
+          desc: 'Practical daily wisdom for discernment and character.',
+          steps: [
+            { id: 'wp-1', book: 'Proverbs', chapter: 1, label: 'Day 1: Proverbs 1 — Beginning of Knowledge' },
+            { id: 'wp-2', book: 'Proverbs', chapter: 3, label: 'Day 2: Proverbs 3 — Trust with All Your Heart' },
+            { id: 'wp-3', book: 'Proverbs', chapter: 4, label: 'Day 3: Proverbs 4 — Guard Your Heart' },
+            { id: 'wp-4', book: 'Proverbs', chapter: 16, label: 'Day 4: Proverbs 16 — Commit Your Plans' },
+            { id: 'wp-5', book: 'Proverbs', chapter: 31, label: 'Day 5: Proverbs 31 — Noble Strength' }
+          ]
+        }
+      ];
+
+      const LINE_MODES = [
+        { val: 1.5, label: 'Compact (1.5)' },
+        { val: 1.75, label: 'Relaxed (1.75)' },
+        { val: 2.05, label: 'Spacious (2.05)' }
+      ];
+
+      const STYLE_PROMPTS = {
+        reverent: 'Read calmly and reverently: ',
+        storytelling: 'Read warmly with gentle storytelling expression: ',
+        study: 'Read clearly at a steady study pace: '
+      };
+
+      /* -----------------------------------------------------------------------
+         3. APPLICATION STATE & HELPERS
+         ----------------------------------------------------------------------- */
+      const DEFAULTS = {
+        book: 'John',
+        chapter: 3,
+        translation: 'web',
+        theme: 'dark',
+        font: 'serif',
+        fontSize: 18,
+        lineHeight: 1.75,
+        highlights: {},
+        notes: {},
+        bookmarks: {},
+        planDone: {},
+        voiceEngine: 'ai',
+        aiVoice: 'Charon',
+        aiStyle: 'reverent',
+        flowMode: 'smooth',
+        speed: 1.0,
+        autoNext: true,
+        browserVoice: ''
+      };
+
+      let state = Object.assign({}, DEFAULTS);
+      try {
+        const saved = JSON.parse(safeGet(STORE_KEY) || 'null');
+        if (saved && typeof saved === 'object') {
+          state = Object.assign({}, DEFAULTS, saved);
+        }
+        if (state.voiceEngine !== 'ai' && state.voiceEngine !== 'browser') state.voiceEngine = 'ai';
+        if (!state.planDone || typeof state.planDone !== 'object') state.planDone = {};
+      } catch (e) {}
+
+      let chapterCache = {};
+      try {
+        const c = JSON.parse(safeGet(CACHE_KEY) || 'null');
+        if (c && typeof c === 'object') chapterCache = c;
+      } catch (e) {}
+
+      let verses = OFFLINE['John|3'].slice();
+      let selectedVerse = null;
+      let editingNoteVerse = null;
+      let editingModalNoteKey = null;
+      let chapterFilter = '';
+      let bookTab = 'NT';
+      let expandedBook = 'John';
+      let studyTab = 'display';
+      let savedFilter = 'all';
+      let savedColor = 'all';
+      let loadToken = 0;
+      let toastTimer = null;
+
+      function saveState() {
+        safeSet(STORE_KEY, JSON.stringify(state));
+      }
+
+      function saveCache() {
+        const keys = Object.keys(chapterCache);
+        if (keys.length > 24) delete chapterCache[keys[0]];
+        safeSet(CACHE_KEY, JSON.stringify(chapterCache));
+      }
+
+      function esc(str) {
+        return String(str == null ? '' : str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function escapeRegExp(s) {
+        return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      }
+
+      function toast(msg) {
+        const el = $('toastBox');
+        if (!el) return;
+        el.textContent = msg;
+        el.classList.remove('hidden');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.add('hidden'), 3600);
+      }
+
+      function setDiagStatus(msg, kind) {
+        const el = $('voiceDiagStatus');
+        if (!el) return;
+        el.textContent = msg;
+        el.className = 'diag-status' + (kind === 'ok' ? ' is-ok' : kind === 'err' ? ' is-err' : '');
+      }
+
+      function copyText(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        let ok = false;
+        try { ok = document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(ta);
+        return ok;
+      }
+
+      function bookMeta(name) {
+        return BOOKS.find((b) => b.name.toLowerCase() === String(name || '').toLowerCase()) || BOOKS[42];
+      }
+
+      function vKey(book, ch, v) {
+        return `${book}|${ch}|${v}`;
+      }
+
+      function parseVKey(key) {
+        const p = String(key).split('|');
+        return { book: p[0], chapter: parseInt(p[1], 10) || 1, verse: parseInt(p[2], 10) || 1 };
+      }
+
+      function getAdjacent(dir) {
+        const idx = BOOKS.findIndex((b) => b.name === state.book);
+        const cur = BOOKS[idx] || BOOKS[42];
+        if (dir < 0) {
+          if (state.chapter > 1) return { book: cur.name, chapter: state.chapter - 1 };
+          if (idx > 0) return { book: BOOKS[idx - 1].name, chapter: BOOKS[idx - 1].ch };
+          return null;
+        }
+        if (state.chapter < cur.ch) return { book: cur.name, chapter: state.chapter + 1 };
+        if (idx >= 0 && idx < BOOKS.length - 1) return { book: BOOKS[idx + 1].name, chapter: 1 };
+        return null;
+      }
+
+      function parseRef(raw) {
+        const m = String(raw || '').trim().match(/^([1-3]?\s*[a-zA-Z\s]+?)\s+(\d+)(?::(\d+))?$/);
+        if (!m) return null;
+        const q = m[1].trim().toLowerCase().replace(/\s+/g, '');
+        const ch = parseInt(m[2], 10);
+        const v = m[3] ? parseInt(m[3], 10) : null;
+        const found = BOOKS.find((b) => {
+          const n = b.name.toLowerCase().replace(/\s+/g, '');
+          return n === q || n.startsWith(q) || b.a.includes(q);
+        });
+        if (!found) return null;
+        return { book: found.name, chapter: Math.max(1, Math.min(found.ch, ch)), verse: v };
+      }
+
+      /* -----------------------------------------------------------------------
+         4. GAPLESS WEB AUDIO GEMINI AI VOICE ENGINE + HTML AUDIO & BROWSER FALLBACK
+         ----------------------------------------------------------------------- */
+      const ttsFallbackAudio = $('ttsFallbackAudio');
+      const audioBufferCache = new Map(); // cacheKey -> { audioBuffer, wavBlobUrl, sampleRate }
+      const audioInflight = new Map();
+      let audioCtx = null;
+      let sysVoices = [];
+      let activeUtterance = null;
+      let syncRafId = null;
+      let testSourceNode = null;
+
+      const audio = {
+        status: 'idle',        // idle | loading | playing | paused
+        token: 0,
+        activeEngine: 'ai',    // ai | browser
+        useHtmlAudio: false,   // true only if Web Audio fails on this browser
+        chunks: [],
+        chunkIdx: 0,
+        verseIdx: -1,
+        fallbackActive: false,
+        // Gapless Web Audio scheduling state
+        scheduled: [],         // [{ chunkIdx, chunk, source, buffer, startCtxTime, endCtxTime, offsetSec, rate }]
+        nextStartTime: 0,
+        nextToSchedule: 0,
+        pausedChunkIdx: 0,
+        pausedOffsetSec: 0,
+        // Browser speech queue
+        browserQueue: [],
+        browserQueueIdx: 0
+      };
+
+      function sanitizeText(str) {
+        return String(str || '')
+          .replace(/[\u0000-\u001F\u007F-\u009F]+/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      }
+
+      // Synchronously create/resume AudioContext and trigger silent buffer inside user gesture
+      function unlockAudioContext() {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        try {
+          if (!audioCtx || audioCtx.state === 'closed') {
+            audioCtx = new AC();
+          }
+          if (audioCtx.state === 'suspended') {
+            audioCtx.resume().catch(() => {});
+          }
+          const silent = audioCtx.createBuffer(1, 1, audioCtx.sampleRate || 24000);
+          const src = audioCtx.createBufferSource();
+          src.buffer = silent;
+          src.connect(audioCtx.destination);
+          src.start(0);
+          return audioCtx;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function base64ToUint8(b64) {
+        const clean = String(b64 || '').replace(/\s+/g, '');
+        const bin = atob(clean);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return bytes;
+      }
+
+      // Trim leading/trailing silence down to ~45ms breath pad + 8ms linear anti-click fades
+      function trimAndFadeFloat32(samples, sampleRate) {
+        const threshold = 0.011; // ~360 / 32768
+        let first = -1;
+        let last = -1;
+        for (let i = 0; i < samples.length; i++) {
+          if (Math.abs(samples[i]) >= threshold) {
+            if (first === -1) first = i;
+            last = i;
+          }
+        }
+
+        let trimmed;
+        if (first !== -1 && last > first) {
+          const pad = Math.floor(sampleRate * 0.045);
+          const s = Math.max(0, first - pad);
+          const e = Math.min(samples.length, last + pad);
+          trimmed = samples.slice(s, e);
+        } else {
+          trimmed = samples.slice();
+        }
+
+        const fadeLen = Math.min(Math.floor(sampleRate * 0.008), Math.floor(trimmed.length / 4));
+        for (let i = 0; i < fadeLen; i++) {
+          const gain = i / fadeLen;
+          trimmed[i] *= gain;
+          trimmed[trimmed.length - 1 - i] *= gain;
+        }
+        return trimmed;
+      }
+
+      // Build standard 44-byte RIFF/WAVE Blob from Float32 mono samples (for <audio> fallback)
+      function encodeFloat32ToWavBlobUrl(samples, sampleRate) {
+        const dataLen = samples.length * 2;
+        const buf = new ArrayBuffer(44 + dataLen);
+        const view = new DataView(buf);
+        const writeStr = (off, s) => {
+          for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i));
+        };
+        writeStr(0, 'RIFF');
+        view.setUint32(4, 36 + dataLen, true);
+        writeStr(8, 'WAVE');
+        writeStr(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true); // PCM
+        view.setUint16(22, 1, true); // Mono
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeStr(36, 'data');
+        view.setUint32(40, dataLen, true);
+
+        let off = 44;
+        for (let i = 0; i < samples.length; i++) {
+          const clamped = Math.max(-1, Math.min(1, samples[i]));
+          view.setInt16(off, clamped < 0 ? Math.round(clamped * 32768) : Math.round(clamped * 32767), true);
+          off += 2;
+        }
+        return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+      }
+
+      // Decode Gemini inline audio (supports both RIFF WAV and headerless 16-bit LE PCM)
+      async function decodeGeminiInlineAudio(base64Data, mimeType) {
+        const bytes = base64ToUint8(base64Data);
+        if (bytes.length < 4) throw new Error('Empty audio payload from Gemini');
+
+        const mime = String(mimeType || '');
+        const rateMatch = mime.match(/rate=(\d+)/i);
+        let sampleRate = rateMatch ? parseInt(rateMatch[1], 10) : 24000;
+        const isRiff = bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46;
+
+        const ctx = unlockAudioContext();
+        let floatSamples = null;
+
+        if (isRiff && ctx) {
+          try {
+            const copyBuf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+            const rawDecoded = await ctx.decodeAudioData(copyBuf);
+            sampleRate = rawDecoded.sampleRate || sampleRate;
+            floatSamples = rawDecoded.getChannelData(0).slice();
+          } catch (e) {
+            // Fall through to manual RIFF data chunk parsing
+          }
+        }
+
+        if (!floatSamples) {
+          let pcmStart = 0;
+          let pcmLen = bytes.byteLength;
+          if (isRiff && bytes.byteLength > 44) {
+            const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+            sampleRate = v.getUint32(24, true) || sampleRate;
+            // Locate "data" subchunk
+            let pos = 12;
+            while (pos + 8 <= bytes.byteLength) {
+              const id = String.fromCharCode(bytes[pos], bytes[pos + 1], bytes[pos + 2], bytes[pos + 3]);
+              const sz = v.getUint32(pos + 4, true);
+              if (id === 'data') {
+                pcmStart = pos + 8;
+                pcmLen = Math.min(sz, bytes.byteLength - pcmStart);
+                break;
+              }
+              pos += 8 + sz;
+            }
+          }
+          const sampleCount = Math.floor(pcmLen / 2);
+          const view = new DataView(bytes.buffer, bytes.byteOffset + pcmStart, sampleCount * 2);
+          floatSamples = new Float32Array(sampleCount);
+          for (let i = 0; i < sampleCount; i++) {
+            floatSamples[i] = view.getInt16(i * 2, true) / 32768.0;
+          }
+        }
+
+        const cleaned = trimAndFadeFloat32(floatSamples, sampleRate);
+        let audioBuffer = null;
+        if (ctx) {
+          try {
+            audioBuffer = ctx.createBuffer(1, cleaned.length, sampleRate);
+            audioBuffer.copyToChannel(cleaned, 0);
+          } catch (e) {
+            audioBuffer = null;
+          }
+        }
+        const wavBlobUrl = encodeFloat32ToWavBlobUrl(cleaned, sampleRate);
+
+        return { audioBuffer, wavBlobUrl, sampleRate };
+      }
+
+      // Punctuation-weighted timing for accurate verse highlighting across multi-verse chunks
+      function calcVerseWeight(text) {
+        const base = Math.max(10, text.length);
+        const pauses = (text.match(/[.!?;]/g) || []).length * 11 + (text.match(/[,:—–]/g) || []).length * 5;
+        return base + pauses;
+      }
+
+      // Smooth Flow (~350-480 chars breaking cleanly on sentence boundaries, no verse numbers) vs Study Pause
+      function buildChunks(list, startIdx, mode) {
+        const out = [];
+        let i = Math.max(0, startIdx);
+        if (mode === 'verse') {
+          while (i < list.length) {
+            const t = sanitizeText(list[i].text);
+            out.push({
+              chunkIndex: out.length,
+              startVerse: list[i].verse,
+              text: t,
+              verses: [{ idx: i, verse: list[i].verse, text: t }],
+              weights: [{ idx: i, s: 0, e: 1 }]
+            });
+            i++;
+          }
+          return out;
+        }
+
+        while (i < list.length) {
+          const slice = [];
+          let chars = 0;
+          while (i < list.length) {
+            const t = sanitizeText(list[i].text);
+            if (slice.length > 0 && (chars + t.length > 480 || slice.length >= 6)) break;
+            slice.push({ idx: i, verse: list[i].verse, text: t });
+            chars += t.length + 1;
+            i++;
+            if (chars >= 350 && /[.!?;]["”'’)\]]*$/.test(t)) break;
+          }
+
+          const rawW = slice.map((v) => calcVerseWeight(v.text));
+          const totalW = rawW.reduce((a, b) => a + b, 0) || 1;
+          let acc = 0;
+          const weights = slice.map((v, k) => {
+            const s = acc / totalW;
+            acc += rawW[k];
+            return { idx: v.idx, s, e: acc / totalW };
+          });
+
+          out.push({
+            chunkIndex: out.length,
+            startVerse: slice[0].verse,
+            text: slice.map((v) => v.text).join(' '),
+            verses: slice,
+            weights
+          });
+        }
+        return out;
+      }
+
+      // Clean Gemini TTS REST call using top-level apiKey (or optional custom key)
+      async function requestGeminiTts(modelName, promptText) {
+        const effectiveKey = getCustomApiKey() || apiKey;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${effectiveKey}`;
+        const payload = {
+          contents: [{ parts: [{ text: promptText }] }],
+          generationConfig: {
+            responseModalities: ["AUDIO"],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: {
+                  voiceName: state.aiVoice || "Charon"
+                }
+              }
+            }
+          }
+        };
+
+        const res = (window.luminaNativePost)
+          ? await window.luminaNativePost(modelName, effectiveKey, JSON.stringify(payload))
+          : await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+
+        if (!res.ok) {
+          let errMsg = `HTTP ${res.status}`;
+          try {
+            const errJson = await res.json();
+            if (errJson && errJson.error && errJson.error.message) {
+              errMsg = errJson.error.message;
+            }
+          } catch (e) {}
+          const err = new Error(errMsg);
+          err.status = res.status;
+          throw err;
+        }
+
+        const data = await res.json();
+        const parts = (data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
+        let inline = null;
+        for (let i = 0; i < parts.length; i++) {
+          const p = parts[i];
+          if (p && p.inlineData && p.inlineData.data) {
+            inline = { data: p.inlineData.data, mimeType: p.inlineData.mimeType || '' };
+            break;
+          }
+          if (p && p.inline_data && p.inline_data.data) {
+            inline = { data: p.inline_data.data, mimeType: p.inline_data.mime_type || '' };
+            break;
+          }
+        }
+
+        if (!inline) {
+          const block = data && data.promptFeedback && data.promptFeedback.blockReason;
+          const err = new Error(block ? `Blocked (${block})` : 'No audio returned by Gemini');
+          err.status = 502;
+          throw err;
+        }
+
+        return decodeGeminiInlineAudio(inline.data, inline.mimeType);
+      }
+
+      // Fetch with 404-only fallback to gemini-2.5-flash-tts and backoff (700ms, 1500ms) on 429/500/503/network
+      async function fetchGeminiAudio(text, cacheKey) {
+        if (cacheKey && audioBufferCache.has(cacheKey)) {
+          return audioBufferCache.get(cacheKey);
+        }
+        if (cacheKey && audioInflight.has(cacheKey)) {
+          return audioInflight.get(cacheKey);
+        }
+
+        const clean = sanitizeText(text);
+        const promptText = `${STYLE_PROMPTS[state.aiStyle] || STYLE_PROMPTS.reverent}${clean}`;
+        const models = ['gemini-3.8-flash-tts', 'gemini-3.8-flash-lite-tts', 'gemini-2.5-pro-preview-tts'];
+        const backoff = [700, 1500];
+
+        const work = (async () => {
+          let mIdx = Math.min(window.__luminaTtsModelIdx || 0, models.length - 1);
+          let attempt = 0;
+          while (true) {
+            try {
+              const decoded = await requestGeminiTts(models[mIdx], promptText);
+              window.__luminaTtsModelIdx = mIdx;
+              if (cacheKey) {
+                if (audioBufferCache.size > 28) {
+                  const oldest = audioBufferCache.keys().next().value;
+                  const oldVal = audioBufferCache.get(oldest);
+                  audioBufferCache.delete(oldest);
+                  if (oldVal && oldVal.wavBlobUrl) {
+                    try { URL.revokeObjectURL(oldVal.wavBlobUrl); } catch (e) {}
+                  }
+                }
+                audioBufferCache.set(cacheKey, decoded);
+              }
+              return decoded;
+            } catch (err) {
+              const st = err && err.status ? err.status : 0;
+              // Only fall back to gemini-2.5-flash-tts on HTTP 404 (not on 403)
+              const modelGone = st === 404 || (st === 400 && /model|not found|not supported/i.test(err.message || ''));
+              if (modelGone && mIdx + 1 < models.length) {
+                mIdx++;
+                continue;
+              }
+              const transient = st === 0 || st === 429 || st === 500 || st === 503;
+              if (transient && attempt < backoff.length) {
+                await new Promise((r) => setTimeout(r, backoff[attempt++]));
+                continue;
+              }
+              throw err;
+            }
+          }
+        })().finally(() => {
+          if (cacheKey) audioInflight.delete(cacheKey);
+        });
+
+        if (cacheKey) audioInflight.set(cacheKey, work);
+        return work;
+      }
+
+      function chunkCacheKey(chunk) {
+        const keyMode = getCustomApiKey() ? 'custom' : 'default';
+        return `${state.book}|${state.chapter}|${state.translation}|${state.aiVoice}|${state.aiStyle}|${state.flowMode}|v${chunk.startVerse}|${chunk.text.length}|${keyMode}`;
+      }
+
+      function prefetchChunks(fromIdx) {
+        [fromIdx + 1, fromIdx + 2].forEach((idx) => {
+          const ch = audio.chunks[idx];
+          if (ch) {
+            fetchGeminiAudio(ch.text, chunkCacheKey(ch)).catch(() => {});
+          }
+        });
+      }
+
+      function formatErrorMsg(err) {
+        const st = err && err.status ? err.status : 0;
+        const msg = err && err.message ? err.message : 'Network or playback error';
+        return st ? `HTTP ${st}: ${msg}` : msg;
+      }
+
+      /* --- Web Audio Gapless Scheduler & Sync Loop --- */
+      function stopSyncLoop() {
+        if (syncRafId !== null) {
+          cancelAnimationFrame(syncRafId);
+          syncRafId = null;
+        }
+      }
+
+      function stopAllWebAudioNodes() {
+        if (testSourceNode) {
+          try { testSourceNode.onended = null; testSourceNode.stop(); } catch (e) {}
+          testSourceNode = null;
+        }
+        audio.scheduled.forEach((entry) => {
+          try {
+            entry.source.onended = null;
+            entry.source.stop();
+          } catch (e) {}
+        });
+        audio.scheduled = [];
+        audio.nextStartTime = 0;
+      }
+
+      function stopHtmlFallbackAudio() {
+        if (!ttsFallbackAudio) return;
+        try {
+          ttsFallbackAudio.ontimeupdate = null;
+          ttsFallbackAudio.onended = null;
+          ttsFallbackAudio.onerror = null;
+          ttsFallbackAudio.pause();
+          ttsFallbackAudio.currentTime = 0;
+        } catch (e) {}
+      }
+
+      function stopMedia() {
+        stopSyncLoop();
+        stopAllWebAudioNodes();
+        stopHtmlFallbackAudio();
+        activeUtterance = null;
+        if ('speechSynthesis' in window) {
+          try { window.speechSynthesis.cancel(); } catch (e) {}
+        }
+      }
+
+      function stopAudio() {
+        audio.token++;
+        stopMedia();
+        audio.status = 'idle';
+        audio.verseIdx = -1;
+        audio.chunks = [];
+        audio.chunkIdx = 0;
+        audio.nextToSchedule = 0;
+        audio.pausedChunkIdx = 0;
+        audio.pausedOffsetSec = 0;
+        audio.fallbackActive = false;
+        audio.useHtmlAudio = false;
+        audio.browserQueue = [];
+        audio.browserQueueIdx = 0;
+        highlightSpeaking(false);
+        updateAudioUI();
+      }
+
+      function getCurrentWebAudioEntry() {
+        if (!audioCtx || !audio.scheduled.length) return null;
+        const now = audioCtx.currentTime;
+        for (let i = 0; i < audio.scheduled.length; i++) {
+          const e = audio.scheduled[i];
+          if (now >= e.startCtxTime - 0.03 && now <= e.endCtxTime + 0.03) return e;
+        }
+        return audio.scheduled[0] || null;
+      }
+
+      function applyVerseFracSync(chunk, frac) {
+        if (!chunk) return;
+        const clamped = Math.max(0, Math.min(0.9999, frac));
+        const w = chunk.weights.find((x) => clamped >= x.s && clamped <= x.e) || chunk.weights[chunk.weights.length - 1];
+        if (w && w.idx !== audio.verseIdx) {
+          audio.verseIdx = w.idx;
+          highlightSpeaking(true);
+          updateAudioUI();
+        } else if ($('audioProg') && verses.length) {
+          const curIdx = w ? w.idx : Math.max(0, audio.verseIdx);
+          const span = w ? Math.max(0.01, w.e - w.s) : 1;
+          const local = w ? Math.max(0, Math.min(1, (clamped - w.s) / span)) : 0;
+          const pct = Math.min(100, Math.round(((curIdx + local) / verses.length) * 100));
+          $('audioProg').style.width = `${pct}%`;
+        }
+      }
+
+      function startWebAudioSyncLoop(tok) {
+        stopSyncLoop();
+        const tick = () => {
+          if (tok !== audio.token || audio.status !== 'playing' || audio.activeEngine !== 'ai') return;
+          if (audio.useHtmlAudio) {
+            const ch = audio.chunks[audio.chunkIdx];
+            if (ch && ttsFallbackAudio && ttsFallbackAudio.duration > 0) {
+              applyVerseFracSync(ch, ttsFallbackAudio.currentTime / ttsFallbackAudio.duration);
+            }
+          } else if (audioCtx) {
+            const entry = getCurrentWebAudioEntry();
+            if (entry) {
+              audio.chunkIdx = entry.chunkIdx;
+              const elapsedBuf = entry.offsetSec + Math.max(0, (audioCtx.currentTime - entry.startCtxTime) * entry.rate);
+              applyVerseFracSync(entry.chunk, elapsedBuf / (entry.buffer.duration || 1));
+            }
+          }
+          syncRafId = requestAnimationFrame(tick);
+        };
+        syncRafId = requestAnimationFrame(tick);
+      }
+
+      // Schedule chunk via Web Audio API at exact nextStartTime (gapless!)
+      async function pumpGaplessWebAudio(startCIdx, offsetSec, tok) {
+        if (tok !== audio.token) return;
+        if (startCIdx >= audio.chunks.length) {
+          finishChapterAudio(tok);
+          return;
+        }
+
+        const chunk = audio.chunks[startCIdx];
+        audio.nextToSchedule = startCIdx + 1;
+
+        if (!audio.scheduled.length) {
+          audio.chunkIdx = startCIdx;
+          audio.status = 'loading';
+          audio.verseIdx = chunk.weights[0].idx;
+          highlightSpeaking(true);
+          updateAudioUI();
+        }
+
+        // Prefetch chunks N+1 and N+2 immediately in the background
+        prefetchChunks(startCIdx);
+
+        let decoded;
+        try {
+          decoded = await fetchGeminiAudio(chunk.text, chunkCacheKey(chunk));
+        } catch (err) {
+          if (tok !== audio.token) return;
+          const errStr = formatErrorMsg(err);
+          setDiagStatus(`AI Voice failed (${errStr})`, 'err');
+          toast(`AI Voice (${errStr}) — using Browser fallback`);
+          // Only fall back to Browser Voice if nothing is already playing, or once prior finishes
+          stopAllWebAudioNodes();
+          playBrowserChunk(startCIdx, tok, true);
+          return;
+        }
+
+        if (tok !== audio.token || audio.status === 'idle' || audio.status === 'paused') return;
+
+        const khz = Math.round((decoded.sampleRate || 24000) / 1000);
+        setDiagStatus(`AI Voice Ready (${state.aiVoice} • ${khz}kHz)`, 'ok');
+
+        const ctx = unlockAudioContext();
+        if (!ctx || !decoded.audioBuffer) {
+          // Fallback to hidden <audio id="ttsFallbackAudio"> if Web Audio API failed
+          playHtmlAudioChunk(startCIdx, offsetSec, decoded, tok);
+          return;
+        }
+
+        try {
+          if (ctx.state === 'suspended') await ctx.resume();
+          if (tok !== audio.token || audio.status === 'idle' || audio.status === 'paused') return;
+
+          const buf = decoded.audioBuffer;
+          const safeOffset = Math.max(0, Math.min(buf.duration - 0.02, offsetSec || 0));
+          const rate = state.speed || 1.0;
+          const src = ctx.createBufferSource();
+          src.buffer = buf;
+          src.playbackRate.value = rate;
+          src.connect(ctx.destination);
+
+          const startAt = Math.max(ctx.currentTime + 0.02, audio.nextStartTime || 0);
+          const remainingBufSec = Math.max(0.01, buf.duration - safeOffset);
+          const endAt = startAt + (remainingBufSec / rate);
+
+          const entry = {
+            chunkIdx: startCIdx,
+            chunk,
+            source: src,
+            buffer: buf,
+            startCtxTime: startAt,
+            endCtxTime: endAt,
+            offsetSec: safeOffset,
+            rate
+          };
+          audio.scheduled.push(entry);
+          audio.nextStartTime = endAt;
+
+          src.onended = () => {
+            if (tok !== audio.token) return;
+            const i = audio.scheduled.indexOf(entry);
+            if (i !== -1) audio.scheduled.splice(i, 1);
+
+            if (startCIdx === audio.chunks.length - 1 && audio.scheduled.length === 0) {
+              finishChapterAudio(tok);
+              return;
+            }
+            // If next chunk wasn't already queued ahead of time, trigger it now
+            if (audio.nextToSchedule <= startCIdx + 1 && startCIdx + 1 < audio.chunks.length) {
+              pumpGaplessWebAudio(startCIdx + 1, 0, tok);
+            }
+          };
+
+          src.start(startAt, safeOffset);
+          audio.useHtmlAudio = false;
+          audio.activeEngine = 'ai';
+          audio.fallbackActive = false;
+          audio.status = 'playing';
+          updateAudioUI();
+          startWebAudioSyncLoop(tok);
+
+          // Pre-schedule chunk N+1 seamlessly once prefetched so transitions have zero gap
+          if (startCIdx + 1 < audio.chunks.length) {
+            const nextIdx = startCIdx + 1;
+            const nextChunk = audio.chunks[nextIdx];
+            fetchGeminiAudio(nextChunk.text, chunkCacheKey(nextChunk))
+              .then(() => {
+                if (tok !== audio.token || audio.status !== 'playing') return;
+                if (audio.nextToSchedule === nextIdx && audio.scheduled.length < 2) {
+                  pumpGaplessWebAudio(nextIdx, 0, tok);
+                }
+              })
+              .catch(() => {});
+          }
+        } catch (webAudioErr) {
+          if (tok !== audio.token) return;
+          playHtmlAudioChunk(startCIdx, offsetSec, decoded, tok);
+        }
+      }
+
+      // Secondary <audio id="ttsFallbackAudio"> path if Web Audio fails on a browser
+      function playHtmlAudioChunk(cIdx, offsetSec, decoded, tok) {
+        if (tok !== audio.token) return;
+        const chunk = audio.chunks[cIdx];
+        if (!chunk || !decoded || !decoded.wavBlobUrl || !ttsFallbackAudio) {
+          playBrowserChunk(cIdx, tok, true);
+          return;
+        }
+        audio.useHtmlAudio = true;
+        audio.activeEngine = 'ai';
+        audio.chunkIdx = cIdx;
+        audio.fallbackActive = false;
+
+        ttsFallbackAudio.onended = () => {
+          if (tok !== audio.token) return;
+          stopSyncLoop();
+          if (cIdx + 1 < audio.chunks.length) {
+            pumpGaplessWebAudio(cIdx + 1, 0, tok);
+          } else {
+            finishChapterAudio(tok);
+          }
+        };
+        ttsFallbackAudio.onerror = () => {
+          if (tok !== audio.token) return;
+          stopSyncLoop();
+          playBrowserChunk(cIdx, tok, true);
+        };
+
+        ttsFallbackAudio.src = decoded.wavBlobUrl;
+        ttsFallbackAudio.playbackRate = state.speed || 1.0;
+        ttsFallbackAudio.preservesPitch = true;
+        if (offsetSec > 0) {
+          try { ttsFallbackAudio.currentTime = offsetSec; } catch (e) {}
+        }
+        audio.status = 'playing';
+        updateAudioUI();
+        ttsFallbackAudio.play()
+          .then(() => startWebAudioSyncLoop(tok))
+          .catch(() => {
+            if (tok !== audio.token) return;
+            playBrowserChunk(cIdx, tok, true);
+          });
+      }
+
+      /* --- Upgraded Natural Browser Voice Engine (Web Speech API) --- */
+      function scoreSystemVoice(v) {
+        let score = 0;
+        const n = (v.name || '').toLowerCase();
+        const l = (v.lang || '').toLowerCase();
+        if (l.startsWith('en-us') || l.startsWith('en-gb')) score += 45;
+        else if (l.startsWith('en')) score += 25;
+        if (/natural|neural|online|enhanced|premium|samantha|aria|guy|jenny|daniel|serena|google us english|google uk english/.test(n)) score += 40;
+        if (/compact|espeak/.test(n)) score -= 25;
+        return score;
+      }
+
+      function populateBrowserVoices() {
+        if (!('speechSynthesis' in window)) return;
+        const raw = window.speechSynthesis.getVoices() || [];
+        sysVoices = raw.slice().sort((a, b) => scoreSystemVoice(b) - scoreSystemVoice(a));
+        const sel = $('selBrowserVoice');
+        if (!sel) return;
+        const en = sysVoices.filter((v) => /^en/i.test(v.lang));
+        const list = en.length ? en : sysVoices;
+        sel.innerHTML = '<option value="">Auto (Best Natural English Voice)</option>' +
+          list.map((v) => `<option value="${esc(v.name)}">${esc(v.name)} (${esc(v.lang)})</option>`).join('');
+        sel.value = state.browserVoice || '';
+      }
+
+      function getChosenSystemVoice() {
+        if (!('speechSynthesis' in window)) return null;
+        const list = window.speechSynthesis.getVoices() || sysVoices;
+        if (!list.length) return null;
+        if (state.browserVoice) {
+          const exact = list.find((v) => v.name === state.browserVoice);
+          if (exact) return exact;
+        }
+        const sorted = list.slice().sort((a, b) => scoreSystemVoice(b) - scoreSystemVoice(a));
+        return sorted[0] || null;
+      }
+
+      function splitBrowserUtterances(chunk) {
+        const items = [];
+        chunk.verses.forEach((v) => {
+          const text = sanitizeText(v.text);
+          if (text.length <= 210) {
+            items.push({ idx: v.idx, text });
+            return;
+          }
+          const parts = text.match(/[^.!?;]+[.!?;]*\s*/g) || [text];
+          let buf = '';
+          parts.forEach((p) => {
+            if (buf && (buf.length + p.length) > 210) {
+              items.push({ idx: v.idx, text: buf.trim() });
+              buf = p;
+            } else {
+              buf += p;
+            }
+          });
+          if (buf.trim()) items.push({ idx: v.idx, text: buf.trim() });
+        });
+        return items;
+      }
+
+      function playBrowserChunk(cIdx, tok, isFallback) {
+        if (tok !== audio.token) return;
+        if (!('speechSynthesis' in window)) {
+          toast('Browser Voice is unavailable on this device.');
+          stopAudio();
+          return;
+        }
+        const chunk = audio.chunks[cIdx];
+        if (!chunk) {
+          finishChapterAudio(tok);
+          return;
+        }
+
+        audio.activeEngine = 'browser';
+        audio.fallbackActive = !!isFallback;
+        audio.chunkIdx = cIdx;
+        audio.browserQueue = splitBrowserUtterances(chunk);
+        audio.browserQueueIdx = 0;
+
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+        if (audio.status === 'idle') audio.status = 'loading';
+
+        const speakNext = () => {
+          if (tok !== audio.token || audio.status === 'idle' || audio.status === 'paused') return;
+          if (audio.browserQueueIdx >= audio.browserQueue.length) {
+            audio.chunkIdx = cIdx + 1;
+            if (audio.chunkIdx < audio.chunks.length) {
+              // Stay on Browser for the rest of this playback attempt if fallback triggered,
+              // while keeping state.voiceEngine === 'ai' untouched for future playback starts
+              if (state.voiceEngine === 'ai' && !isFallback) {
+                pumpGaplessWebAudio(audio.chunkIdx, 0, tok);
+              } else {
+                playBrowserChunk(audio.chunkIdx, tok, isFallback);
+              }
+            } else {
+              finishChapterAudio(tok);
+            }
+            return;
+          }
+
+          const item = audio.browserQueue[audio.browserQueueIdx];
+          const u = new SpeechSynthesisUtterance(item.text);
+          u.lang = 'en-US';
+          u.rate = state.speed || 1.0;
+          const v = getChosenSystemVoice();
+          if (v) u.voice = v;
+
+          activeUtterance = u; // Prevent GC dropping onend in Chrome/Safari
+
+          u.onstart = () => {
+            if (tok !== audio.token) return;
+            audio.status = 'playing';
+            audio.verseIdx = item.idx;
+            highlightSpeaking(true);
+            updateAudioUI();
+          };
+          u.onend = () => {
+            if (tok !== audio.token || audio.status !== 'playing') return;
+            audio.browserQueueIdx++;
+            speakNext();
+          };
+          u.onerror = (ev) => {
+            if (tok !== audio.token) return;
+            const code = ev && ev.error ? ev.error : '';
+            if (code === 'canceled' || code === 'interrupted') return;
+            audio.browserQueueIdx++;
+            speakNext();
+          };
+
+          audio.status = 'playing';
+          audio.verseIdx = item.idx;
+          highlightSpeaking(true);
+          updateAudioUI();
+          window.speechSynthesis.speak(u);
+        };
+
+        speakNext();
+      }
+
+      /* --- Transport Controls (Start, Pause/Resume, Live Speed, Prev/Next Verse) --- */
+      function finishChapterAudio(tok) {
+        if (tok !== audio.token) return;
+        const next = state.autoNext ? getAdjacent(1) : null;
+        stopAudio();
+        if (next) {
+          toast(`Continuing to ${next.book} ${next.chapter}...`);
+          loadChapter(next.book, next.chapter, { autoPlay: true });
+        } else {
+          toast(`Finished reading ${state.book} ${state.chapter}`);
+        }
+      }
+
+      function startReading(startVerseIdx) {
+        unlockAudioContext();
+        if (!verses.length) return;
+        audio.token++;
+        const tok = audio.token;
+        stopMedia();
+
+        const idx = Math.max(0, Math.min(verses.length - 1, startVerseIdx || 0));
+        audio.chunks = buildChunks(verses, idx, state.flowMode);
+        audio.chunkIdx = 0;
+        audio.nextToSchedule = 0;
+        audio.pausedChunkIdx = 0;
+        audio.pausedOffsetSec = 0;
+        audio.verseIdx = idx;
+        audio.fallbackActive = false;
+        audio.useHtmlAudio = false;
+
+        const hasKey = !!(getCustomApiKey() || apiKey);
+        if (state.voiceEngine === 'browser') {
+          playBrowserChunk(0, tok, false);
+        } else if (!hasKey) {
+          audio.status = 'idle';
+          updateAudioUI();
+          populateBrowserVoices();
+          syncVoiceControls();
+          openModal('voiceModal');
+          const kd = document.querySelector('.key-details');
+          if (kd) kd.open = true;
+          setDiagStatus('AI Voice needs a Gemini API key. Paste it below, tap "Test AI Voice", then Done and Listen again.', 'err');
+          return;
+        } else {
+          pumpGaplessWebAudio(0, 0, tok);
+        }
+      }
+
+      function togglePlayPause() {
+        unlockAudioContext();
+        if (audio.status === 'idle') {
+          startReading(0);
+          return;
+        }
+        if (audio.status === 'playing' || audio.status === 'loading') {
+          // Record exact offset for Web Audio or HTML Audio pause/resume
+          if (audio.activeEngine === 'ai') {
+            if (audio.useHtmlAudio && ttsFallbackAudio) {
+              audio.pausedChunkIdx = audio.chunkIdx;
+              audio.pausedOffsetSec = ttsFallbackAudio.currentTime || 0;
+              ttsFallbackAudio.pause();
+            } else if (audioCtx) {
+              const cur = getCurrentWebAudioEntry();
+              if (cur) {
+                audio.pausedChunkIdx = cur.chunkIdx;
+                const elapsed = Math.max(0, (audioCtx.currentTime - cur.startCtxTime) * cur.rate);
+                audio.pausedOffsetSec = Math.min(cur.buffer.duration - 0.02, cur.offsetSec + elapsed);
+              } else {
+                audio.pausedChunkIdx = audio.chunkIdx;
+                audio.pausedOffsetSec = 0;
+              }
+              stopAllWebAudioNodes();
+            }
+          } else if ('speechSynthesis' in window) {
+            try { window.speechSynthesis.cancel(); } catch (e) {}
+          }
+          stopSyncLoop();
+          audio.status = 'paused';
+          updateAudioUI();
+          return;
+        }
+        if (audio.status === 'paused') {
+          if (audio.activeEngine === 'ai') {
+            if (audio.useHtmlAudio && ttsFallbackAudio && ttsFallbackAudio.src) {
+              audio.status = 'playing';
+              ttsFallbackAudio.playbackRate = state.speed || 1.0;
+              ttsFallbackAudio.play()
+                .then(() => startWebAudioSyncLoop(audio.token))
+                .catch(() => startReading(Math.max(0, audio.verseIdx)));
+              updateAudioUI();
+            } else {
+              audio.token++;
+              const tok = audio.token;
+              audio.scheduled = [];
+              audio.nextStartTime = 0;
+              audio.nextToSchedule = audio.pausedChunkIdx;
+              pumpGaplessWebAudio(audio.pausedChunkIdx, audio.pausedOffsetSec, tok);
+            }
+          } else {
+            startReading(Math.max(0, audio.verseIdx));
+          }
+        }
+      }
+
+      function applyLiveSpeedChange(newRate) {
+        state.speed = parseFloat(newRate) || 1.0;
+        saveState();
+        syncVoiceControls();
+
+        if (audio.status !== 'playing') return;
+        if (audio.activeEngine === 'ai') {
+          if (audio.useHtmlAudio && ttsFallbackAudio) {
+            ttsFallbackAudio.playbackRate = state.speed;
+          } else if (audioCtx) {
+            const cur = getCurrentWebAudioEntry();
+            if (cur) {
+              const elapsed = Math.max(0, (audioCtx.currentTime - cur.startCtxTime) * cur.rate);
+              const resumeOffset = Math.min(cur.buffer.duration - 0.02, cur.offsetSec + elapsed);
+              const resumeChunk = cur.chunkIdx;
+              audio.token++;
+              const tok = audio.token;
+              stopAllWebAudioNodes();
+              audio.nextToSchedule = resumeChunk;
+              pumpGaplessWebAudio(resumeChunk, resumeOffset, tok);
+            }
+          }
+        } else if (audio.activeEngine === 'browser') {
+          startReading(Math.max(0, audio.verseIdx));
+        }
+      }
+
+      function stepVerse(delta) {
+        unlockAudioContext();
+        if (!verses.length) return;
+        const baseIdx = audio.status === 'idle' ? 0 : Math.max(0, audio.verseIdx);
+        const target = Math.max(0, Math.min(verses.length - 1, baseIdx + delta));
+        startReading(target);
+      }
+
+      /* --- Live Diagnostic Tests in #voiceModal --- */
+      async function runTestAiVoice() {
+        unlockAudioContext();
+        const btn = $('btnTestAiVoice');
+        if (btn) btn.disabled = true;
+
+        audio.token++;
+        stopMedia();
+        audio.status = 'idle';
+        highlightSpeaking(false);
+        updateAudioUI();
+
+        const voice = state.aiVoice || 'Charon';
+        if (!(getCustomApiKey() || apiKey)) {
+          setDiagStatus('No Gemini API key set. Paste one under "Gemini API Key" below, then test again.', 'err');
+          if (btn) btn.disabled = false;
+          return;
+        }
+        setDiagStatus(`Testing Gemini AI Voice (${voice})...`);
+
+        try {
+          const decoded = await fetchGeminiAudio('The Lord is my shepherd; I shall not want.', null);
+          const khz = Math.round((decoded.sampleRate || 24000) / 1000);
+          const ctx = unlockAudioContext();
+
+          if (ctx && decoded.audioBuffer) {
+            if (ctx.state === 'suspended') await ctx.resume();
+            const src = ctx.createBufferSource();
+            src.buffer = decoded.audioBuffer;
+            src.playbackRate.value = state.speed || 1.0;
+            src.connect(ctx.destination);
+            testSourceNode = src;
+            src.onended = () => {
+              if (testSourceNode === src) testSourceNode = null;
+              if (decoded.wavBlobUrl) {
+                try { URL.revokeObjectURL(decoded.wavBlobUrl); } catch (e) {}
+              }
+              if (btn) btn.disabled = false;
+            };
+            setDiagStatus(`AI Voice Ready (${voice} • ${khz}kHz)`, 'ok');
+            src.start(0);
+          } else if (ttsFallbackAudio && decoded.wavBlobUrl) {
+            ttsFallbackAudio.onended = () => {
+              try { URL.revokeObjectURL(decoded.wavBlobUrl); } catch (e) {}
+              if (btn) btn.disabled = false;
+            };
+            ttsFallbackAudio.onerror = () => {
+              setDiagStatus('Decoded WAV failed to play in fallback audio element.', 'err');
+              if (btn) btn.disabled = false;
+            };
+            ttsFallbackAudio.src = decoded.wavBlobUrl;
+            ttsFallbackAudio.playbackRate = state.speed || 1.0;
+            setDiagStatus(`AI Voice Ready (${voice} • ${khz}kHz)`, 'ok');
+            await ttsFallbackAudio.play();
+          } else {
+            setDiagStatus(`AI Voice Ready (${voice} • ${khz}kHz)`, 'ok');
+            if (btn) btn.disabled = false;
+          }
+        } catch (err) {
+          const errStr = formatErrorMsg(err);
+          setDiagStatus(errStr, 'err');
+          toast(errStr);
+          if (btn) btn.disabled = false;
+        }
+      }
+
+      function runTestBrowserVoice() {
+        const btn = $('btnTestBrowserVoice');
+        if (!('speechSynthesis' in window)) {
+          setDiagStatus('Browser Voice (speechSynthesis) is not supported here.', 'err');
+          return;
+        }
+        if (btn) btn.disabled = true;
+
+        audio.token++;
+        stopMedia();
+        audio.status = 'idle';
+        highlightSpeaking(false);
+        updateAudioUI();
+
+        const u = new SpeechSynthesisUtterance('The Lord is my shepherd; I shall not want.');
+        u.lang = 'en-US';
+        u.rate = state.speed || 1.0;
+        const v = getChosenSystemVoice();
+        if (v) u.voice = v;
+        activeUtterance = u;
+        const label = v ? v.name : 'System Default';
+        setDiagStatus(`Playing Browser Voice (${label})...`, 'ok');
+
+        u.onend = () => {
+          setDiagStatus(`Browser Voice Ready (${label})`, 'ok');
+          if (btn) btn.disabled = false;
+        };
+        u.onerror = (ev) => {
+          const code = ev && ev.error ? ev.error : 'error';
+          if (code !== 'canceled' && code !== 'interrupted') {
+            setDiagStatus(`Browser Voice error: ${code}`, 'err');
+          }
+          if (btn) btn.disabled = false;
+        };
+        window.speechSynthesis.speak(u);
+      }
+
+      function highlightSpeaking(scroll) {
+        const rows = document.querySelectorAll('.verse-row');
+        const activeV = (audio.verseIdx >= 0 && verses[audio.verseIdx]) ? verses[audio.verseIdx].verse : -1;
+        rows.forEach((el) => {
+          const match = Number(el.dataset.vnum) === activeV && audio.status !== 'idle';
+          el.classList.toggle('is-speaking', match);
+          if (match && scroll) {
+            try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+          }
+        });
+      }
+
+      function updateAudioUI() {
+        const isPlay = audio.status === 'playing';
+        const isLoad = audio.status === 'loading';
+        const isPause = audio.status === 'paused';
+        try { if (window.AndroidBridge && window.AndroidBridge.setPlaying) window.AndroidBridge.setPlaying(isPlay || isLoad); } catch (e) {}
+
+        if ($('icoPlay')) $('icoPlay').classList.toggle('hidden', isPlay || isLoad);
+        if ($('icoPause')) $('icoPause').classList.toggle('hidden', !isPlay);
+        if ($('icoLoad')) $('icoLoad').classList.toggle('hidden', !isLoad);
+        if ($('lblListen')) $('lblListen').textContent = isPlay ? 'Pause Audio' : (isPause ? 'Resume Audio' : 'Listen to Chapter');
+
+        const engineLbl = (audio.status !== 'idle' && audio.activeEngine === 'browser')
+          ? 'Device Voice'
+          : (state.voiceEngine === 'browser' ? 'Device Voice' : `AI Voice (${state.aiVoice})`);
+        const flowLbl = state.flowMode === 'smooth' ? 'Smooth Flow' : 'Study Pause';
+        const curV = (audio.verseIdx >= 0 && verses[audio.verseIdx]) ? verses[audio.verseIdx].verse : null;
+        const pos = Math.max(1, audio.verseIdx + 1);
+        const total = verses.length || 1;
+
+        if ($('audioL1')) {
+          if (isLoad) $('audioL1').textContent = `Loading ${state.book} ${state.chapter}${curV ? ':' + curV : ''}...`;
+          else if (isPlay && curV) $('audioL1').textContent = `Reading ${state.book} ${state.chapter}:${curV} (${pos} / ${total})`;
+          else if (isPause && curV) $('audioL1').textContent = `Paused • ${state.book} ${state.chapter}:${curV} (${pos} / ${total})`;
+          else $('audioL1').textContent = `Ready to read ${state.book} ${state.chapter}`;
+        }
+
+        if ($('audioL2')) {
+          $('audioL2').textContent = `${engineLbl} • ${flowLbl}`;
+        }
+
+        if ($('audioProg')) {
+          const pct = (audio.status !== 'idle' && verses.length) ? Math.round((pos / total) * 100) : 0;
+          $('audioProg').style.width = `${pct}%`;
+        }
+      }
+
+      /* -----------------------------------------------------------------------
+         5. CHAPTER FETCHING, LIVE WORD FILTER & VERSE STUDY TOOLS
+         ----------------------------------------------------------------------- */
+      function setBanner(msg) {
+        const el = $('statusBanner');
+        if (!el) return;
+        if (!msg) {
+          el.classList.add('hidden');
+          el.textContent = '';
+        } else {
+          el.textContent = msg;
+          el.classList.remove('hidden');
+        }
+      }
+
+      function renderVerses() {
+        const listEl = $('versesList');
+        if (!listEl) return;
+        listEl.innerHTML = '';
+
+        const q = chapterFilter.trim();
+        const qLow = q.toLowerCase();
+        const filtered = qLow
+          ? verses.filter((v) => v.text.toLowerCase().includes(qLow) || String(v.verse) === qLow)
+          : verses;
+
+        const metaEl = $('filterMeta');
+        const clrBtn = $('btnClearFilter');
+        if (clrBtn) clrBtn.classList.toggle('hidden', !q);
+        if (metaEl) {
+          if (q) {
+            metaEl.textContent = `Showing ${filtered.length} of ${verses.length} verses matching "${q}"`;
+            metaEl.classList.remove('hidden');
+          } else {
+            metaEl.classList.add('hidden');
+          }
+        }
+
+        if (!filtered.length) {
+          listEl.innerHTML = `<div class="card" style="text-align:center;color:var(--muted);font-size:14px;">No verses in ${esc(state.book)} ${state.chapter} match "${esc(q)}".</div>`;
+          return;
+        }
+
+        const hitRe = q ? new RegExp(`(${escapeRegExp(q)})`, 'gi') : null;
+
+        filtered.forEach((v) => {
+          const realIdx = verses.findIndex((x) => x.verse === v.verse);
+          const k = vKey(state.book, state.chapter, v.verse);
+          const hl = state.highlights[k] || '';
+          const note = state.notes[k] || '';
+          const bm = !!state.bookmarks[k];
+          const isSel = selectedVerse === v.verse;
+          const isSpk = audio.status !== 'idle' && audio.verseIdx === realIdx;
+
+          const wrap = document.createElement('div');
+          const row = document.createElement('div');
+          row.className = 'verse-row' +
+            (hl ? ' hl-' + hl : '') +
+            (isSel ? ' is-selected' : '') +
+            (isSpk ? ' is-speaking' : '');
+          row.dataset.vnum = String(v.verse);
+
+          let textHtml = esc(v.text);
+          if (hitRe) {
+            textHtml = textHtml.replace(hitRe, '<span class="search-hit">$1</span>');
+          }
+
+          const tags = (bm ? '<span class="v-tag">Saved</span>' : '') + (note ? '<span class="v-tag">Note</span>' : '');
+          row.innerHTML = `<span class="v-num">${v.verse}</span><div class="v-body">${textHtml}${tags}</div>`;
+
+          row.addEventListener('click', () => {
+            selectedVerse = (selectedVerse === v.verse) ? null : v.verse;
+            if (selectedVerse !== editingNoteVerse) editingNoteVerse = null;
+            renderVerses();
+          });
+          wrap.appendChild(row);
+
+          if (isSel) {
+            const tb = document.createElement('div');
+            tb.className = 'v-toolbar';
+
+            const swWrap = document.createElement('div');
+            swWrap.className = 'v-tools';
+            ['yellow', 'teal', 'green', 'blue', 'rose'].forEach((c) => {
+              const s = document.createElement('button');
+              s.type = 'button';
+              s.className = `swatch sw-${c}` + (hl === c ? ' is-on' : '');
+              s.title = `Highlight ${c}`;
+              s.setAttribute('aria-label', `Highlight ${c}`);
+              s.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (state.highlights[k] === c) delete state.highlights[k];
+                else state.highlights[k] = c;
+                saveState();
+                renderVerses();
+              });
+              swWrap.appendChild(s);
+            });
+
+            if (hl) {
+              const clr = document.createElement('button');
+              clr.type = 'button';
+              clr.className = 'mini-btn';
+              clr.textContent = 'Clear';
+              clr.addEventListener('click', (e) => {
+                e.stopPropagation();
+                delete state.highlights[k];
+                saveState();
+                renderVerses();
+              });
+              swWrap.appendChild(clr);
+            }
+
+            const actWrap = document.createElement('div');
+            actWrap.className = 'v-tools';
+
+            const bListen = document.createElement('button');
+            bListen.type = 'button';
+            bListen.className = 'mini-btn is-acc';
+            bListen.textContent = '▶ Listen from here';
+            bListen.addEventListener('click', (e) => {
+              e.stopPropagation();
+              startReading(realIdx >= 0 ? realIdx : 0);
+            });
+
+            const bNote = document.createElement('button');
+            bNote.type = 'button';
+            bNote.className = 'mini-btn' + (note ? ' is-acc' : '');
+            bNote.textContent = note ? 'Edit Note' : 'Note';
+            bNote.addEventListener('click', (e) => {
+              e.stopPropagation();
+              editingNoteVerse = (editingNoteVerse === v.verse) ? null : v.verse;
+              renderVerses();
+            });
+
+            const bBm = document.createElement('button');
+            bBm.type = 'button';
+            bBm.className = 'mini-btn' + (bm ? ' is-acc' : '');
+            bBm.textContent = bm ? 'Bookmarked' : 'Bookmark';
+            bBm.addEventListener('click', (e) => {
+              e.stopPropagation();
+              if (state.bookmarks[k]) delete state.bookmarks[k];
+              else state.bookmarks[k] = { text: v.text, at: Date.now() };
+              saveState();
+              renderVerses();
+              toast(state.bookmarks[k] ? `Bookmarked ${state.book} ${state.chapter}:${v.verse}` : 'Bookmark removed');
+            });
+
+            const bCopy = document.createElement('button');
+            bCopy.type = 'button';
+            bCopy.className = 'mini-btn';
+            bCopy.textContent = 'Copy';
+            bCopy.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const formatted = `"${v.text}" — ${state.book} ${state.chapter}:${v.verse} (${state.translation.toUpperCase()})`;
+              toast(copyText(formatted) ? 'Copied verse to clipboard' : 'Copy unavailable');
+            });
+
+            actWrap.appendChild(bListen);
+            actWrap.appendChild(bNote);
+            actWrap.appendChild(bBm);
+            actWrap.appendChild(bCopy);
+            tb.appendChild(swWrap);
+            tb.appendChild(actWrap);
+            wrap.appendChild(tb);
+
+            if (editingNoteVerse === v.verse) {
+              const nb = document.createElement('div');
+              nb.className = 'v-note-box';
+              nb.innerHTML = `<div class="lbl"><span>Note • ${esc(state.book)} ${state.chapter}:${v.verse}</span></div>`;
+              const ta = document.createElement('textarea');
+              ta.className = 'note-area';
+              ta.placeholder = 'Write your study note or reflection...';
+              ta.value = note;
+              nb.appendChild(ta);
+
+              const nr = document.createElement('div');
+              nr.style.cssText = 'display:flex;justify-content:flex-end;gap:6px;margin-top:8px;';
+
+              if (note) {
+                const del = document.createElement('button');
+                del.type = 'button';
+                del.className = 'mini-btn is-danger';
+                del.textContent = 'Delete';
+                del.addEventListener('click', () => {
+                  delete state.notes[k];
+                  editingNoteVerse = null;
+                  saveState();
+                  renderVerses();
+                  toast('Note deleted');
+                });
+                nr.appendChild(del);
+              }
+
+              const sav = document.createElement('button');
+              sav.type = 'button';
+              sav.className = 'mini-btn is-acc';
+              sav.textContent = 'Save Note';
+              sav.addEventListener('click', () => {
+                const txt = ta.value.trim();
+                if (txt) state.notes[k] = txt;
+                else delete state.notes[k];
+                editingNoteVerse = null;
+                saveState();
+                renderVerses();
+                toast(txt ? 'Note saved' : 'Note cleared');
+              });
+              nr.appendChild(sav);
+              nb.appendChild(nr);
+              wrap.appendChild(nb);
+            }
+          }
+
+          listEl.appendChild(wrap);
+        });
+      }
+
+      function updateHeaderUI() {
+        const meta = bookMeta(state.book);
+        const title = `${state.book} ${state.chapter}`;
+        if ($('hdrChapter')) $('hdrChapter').textContent = title;
+        if ($('chapterTitle')) $('chapterTitle').textContent = title;
+        if ($('badgeTestament')) $('badgeTestament').textContent = meta.t === 'OT' ? 'Old Testament' : 'New Testament';
+        if ($('badgeTrans')) $('badgeTrans').textContent = state.translation.toUpperCase();
+        if ($('selTranslation')) $('selTranslation').value = state.translation;
+
+        const prev = getAdjacent(-1);
+        const next = getAdjacent(1);
+        if ($('btnPrevTop')) $('btnPrevTop').disabled = !prev;
+        if ($('btnNextTop')) $('btnNextTop').disabled = !next;
+        if ($('btnPrevBottom')) $('btnPrevBottom').disabled = !prev;
+        if ($('btnNextBottom')) $('btnNextBottom').disabled = !next;
+        if ($('lblPrevBottom')) $('lblPrevBottom').textContent = prev ? `${prev.book} ${prev.chapter}` : 'Beginning';
+        if ($('lblNextBottom')) $('lblNextBottom').textContent = next ? `${next.book} ${next.chapter}` : 'End';
+      }
+
+      function scrollToVerse(vNum) {
+        if (!vNum) return;
+        selectedVerse = vNum;
+        renderVerses();
+        setTimeout(() => {
+          const el = document.querySelector(`.verse-row[data-vnum="${vNum}"]`);
+          if (el) {
+            try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+          }
+        }, 60);
+      }
+
+      async function loadChapter(bookName, chNum, opts) {
+        opts = opts || {};
+        stopAudio();
+        const meta = bookMeta(bookName);
+        state.book = meta.name;
+        state.chapter = Math.max(1, Math.min(meta.ch, parseInt(chNum, 10) || 1));
+        selectedVerse = opts.targetVerse || null;
+        editingNoteVerse = null;
+        chapterFilter = '';
+        if ($('chapterSearchInput')) $('chapterSearchInput').value = '';
+        bookTab = meta.t;
+        expandedBook = meta.name;
+        saveState();
+        updateHeaderUI();
+
+        const tok = ++loadToken;
+        const cKey = `${state.translation}|${state.book}|${state.chapter}`;
+        const offKey = `${state.book}|${state.chapter}`;
+
+        // Immediate cached chapter render
+        if (chapterCache[cKey] && chapterCache[cKey].length) {
+          verses = chapterCache[cKey];
+          setBanner('');
+          renderVerses();
+          updateAudioUI();
+          if (opts.targetVerse) scrollToVerse(opts.targetVerse);
+          if (opts.autoPlay) startReading(0);
+          return;
+        }
+
+        // Immediate offline study text while live translation fetches silently
+        if (OFFLINE[offKey]) {
+          verses = OFFLINE[offKey].slice();
+          setBanner('');
+          renderVerses();
+          updateAudioUI();
+          if (opts.targetVerse) scrollToVerse(opts.targetVerse);
+        } else {
+          setBanner(`Loading ${state.book} ${state.chapter} (${state.translation.toUpperCase()})...`);
+        }
+
+        try {
+          const apiUrl = `https://bible-api.com/${encodeURIComponent(state.book)}+${state.chapter}?translation=${state.translation.toLowerCase()}`;
+          const res = await fetch(apiUrl);
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          if (tok !== loadToken) return;
+          if (!data || !Array.isArray(data.verses) || !data.verses.length) throw new Error('Empty chapter');
+          verses = data.verses.map((v) => ({
+            verse: Number(v.verse),
+            text: String(v.text || '').replace(/\s+/g, ' ').trim()
+          }));
+          chapterCache[cKey] = verses;
+          saveCache();
+          setBanner('');
+          renderVerses();
+          updateAudioUI();
+          if (opts.targetVerse) scrollToVerse(opts.targetVerse);
+          if (opts.autoPlay) startReading(0);
+        } catch (err) {
+          if (tok !== loadToken) return;
+          if (OFFLINE[offKey]) {
+            verses = OFFLINE[offKey].slice();
+            setBanner('Offline study text displayed (live translation unavailable).');
+            renderVerses();
+            updateAudioUI();
+            if (opts.autoPlay) startReading(0);
+          } else {
+            verses = [];
+            renderVerses();
+            setBanner(`Could not load ${state.book} ${state.chapter} offline. Built-in chapters: Genesis 1, Psalms 23, Proverbs 3, John 1, John 3, Romans 8.`);
+          }
+        }
+      }
+
+      /* -----------------------------------------------------------------------
+         6. THREE CENTERED MODALS, THEMES, SAVED, NOTES & READING PLANS
+         ----------------------------------------------------------------------- */
+      function closeAllModals() {
+        ['bookModal', 'voiceModal', 'studyModal'].forEach((id) => {
+          const el = $(id);
+          if (el) el.classList.add('hidden');
+        });
+      }
+
+      function openModal(id) {
+        closeAllModals();
+        const el = $(id);
+        if (el) el.classList.remove('hidden');
+      }
+
+      function applyDisplay() {
+        document.documentElement.setAttribute('data-theme', state.theme);
+        const listEl = $('versesList');
+        if (listEl) {
+          listEl.classList.toggle('font-serif', state.font === 'serif');
+          listEl.classList.toggle('font-sans', state.font === 'sans');
+          listEl.style.fontSize = `${state.fontSize}px`;
+          listEl.style.lineHeight = String(state.lineHeight);
+        }
+        if ($('lblFontSize')) $('lblFontSize').textContent = `${state.fontSize}px`;
+        const lm = LINE_MODES.find((x) => x.val === state.lineHeight) || LINE_MODES[1];
+        if ($('btnLineSpacing')) $('btnLineSpacing').textContent = lm.label;
+
+        document.querySelectorAll('#themeGroup button').forEach((b) => {
+          b.classList.toggle('is-active', b.dataset.theme === state.theme);
+        });
+        document.querySelectorAll('#fontGroup button').forEach((b) => {
+          b.classList.toggle('is-active', b.dataset.font === state.font);
+        });
+      }
+
+      function syncVoiceControls() {
+        document.querySelectorAll('#engineGroup button').forEach((b) => {
+          b.classList.toggle('is-active', b.dataset.engine === state.voiceEngine);
+        });
+        if ($('selAiVoice')) $('selAiVoice').value = state.aiVoice;
+        if ($('selAiStyle')) $('selAiStyle').value = state.aiStyle;
+        if ($('selFlowMode')) $('selFlowMode').value = state.flowMode;
+        if ($('selDockSpeed')) $('selDockSpeed').value = String(state.speed);
+        if ($('selModalSpeed')) $('selModalSpeed').value = String(state.speed);
+        if ($('chkAutoNext')) $('chkAutoNext').checked = !!state.autoNext;
+        if ($('selBrowserVoice')) $('selBrowserVoice').value = state.browserVoice || '';
+        if ($('inpCustomKey')) $('inpCustomKey').value = getCustomApiKey();
+        updateAudioUI();
+      }
+
+      function renderBookList() {
+        const wrap = $('bookList');
+        if (!wrap) return;
+        const q = ($('bookSearch') ? $('bookSearch').value : '').trim().toLowerCase();
+        document.querySelectorAll('#testamentTabs button').forEach((b) => {
+          b.classList.toggle('is-active', b.dataset.testament === bookTab);
+        });
+
+        const filtered = BOOKS.filter((b) => {
+          if (q) return b.name.toLowerCase().includes(q) || b.a.some((x) => x.includes(q));
+          return b.t === bookTab;
+        });
+
+        wrap.innerHTML = '';
+        if (!filtered.length) {
+          wrap.innerHTML = '<div class="card" style="text-align:center;color:var(--muted);font-size:13px;">No matching books found.</div>';
+          return;
+        }
+
+        filtered.forEach((b) => {
+          const card = document.createElement('div');
+          card.className = 'book-card';
+
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'book-btn';
+          btn.innerHTML = `<span>${esc(b.name)}</span><span style="font-size:11px;color:var(--muted);">${b.ch} ch</span>`;
+          btn.addEventListener('click', () => {
+            expandedBook = (expandedBook === b.name) ? '' : b.name;
+            renderBookList();
+          });
+          card.appendChild(btn);
+
+          if (expandedBook === b.name || filtered.length === 1) {
+            const grid = document.createElement('div');
+            grid.className = 'ch-grid';
+            for (let c = 1; c <= b.ch; c++) {
+              const cb = document.createElement('button');
+              cb.type = 'button';
+              cb.className = 'ch-btn' + (state.book === b.name && state.chapter === c ? ' is-cur' : '');
+              cb.textContent = String(c);
+              cb.addEventListener('click', () => {
+                closeAllModals();
+                loadChapter(b.name, c);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              });
+              grid.appendChild(cb);
+            }
+            card.appendChild(grid);
+          }
+
+          wrap.appendChild(card);
+        });
+      }
+
+      function renderStudyPanels() {
+        document.querySelectorAll('#studyTabs button').forEach((b) => {
+          b.classList.toggle('is-active', b.dataset.stab === studyTab);
+        });
+        $('panelDisplay').classList.toggle('hidden', studyTab !== 'display');
+        $('panelSaved').classList.toggle('hidden', studyTab !== 'saved');
+        $('panelNotes').classList.toggle('hidden', studyTab !== 'notes');
+        $('panelPlans').classList.toggle('hidden', studyTab !== 'plans');
+
+        if (studyTab === 'saved') {
+          document.querySelectorAll('#savedFilterGroup button').forEach((b) => {
+            b.classList.toggle('is-active', b.dataset.sfilter === savedFilter);
+          });
+          document.querySelectorAll('#savedColorGroup button').forEach((b) => {
+            b.classList.toggle('is-active', b.dataset.scolor === savedColor);
+          });
+          $('savedColorGroup').classList.toggle('hidden', savedFilter === 'bookmarks');
+
+          const keys = new Set();
+          if (savedFilter !== 'highlights') Object.keys(state.bookmarks).forEach((k) => keys.add(k));
+          if (savedFilter !== 'bookmarks') Object.keys(state.highlights).forEach((k) => keys.add(k));
+
+          const list = Array.from(keys).filter((k) => {
+            if (savedColor === 'all' || savedFilter === 'bookmarks') return true;
+            return state.highlights[k] === savedColor;
+          });
+
+          const container = $('savedList');
+          container.innerHTML = '';
+
+          if (!list.length) {
+            container.innerHTML = '<div class="card" style="text-align:center;color:var(--muted);font-size:13px;">No matching saved verses or highlights yet. Tap any verse to bookmark or highlight it.</div>';
+            return;
+          }
+
+          list.forEach((k) => {
+            const p = parseVKey(k);
+            const bm = state.bookmarks[k];
+            const hl = state.highlights[k];
+            const card = document.createElement('div');
+            card.className = 'card';
+            const badgeHtml = (bm ? '<span class="v-tag">Saved</span>' : '') + (hl ? `<span class="v-tag">${esc(hl)}</span>` : '');
+            const snippet = bm && bm.text ? `<div style="font-size:12px;color:var(--muted);margin-top:4px;">${esc(bm.text)}</div>` : '';
+            card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+              <strong style="font-size:13px;color:var(--accent-hi);">${esc(p.book)} ${p.chapter}:${p.verse}</strong>
+              <div>${badgeHtml}</div>
+            </div>${snippet}`;
+            card.style.cursor = 'pointer';
+            card.addEventListener('click', () => {
+              closeAllModals();
+              loadChapter(p.book, p.chapter, { targetVerse: p.verse });
+            });
+            container.appendChild(card);
+          });
+        }
+
+        if (studyTab === 'notes') {
+          const keys = Object.keys(state.notes);
+          const container = $('panelNotes');
+          container.innerHTML = '';
+
+          if (!keys.length) {
+            container.innerHTML = '<div class="card" style="text-align:center;color:var(--muted);font-size:13px;">No notes yet. Tap any verse and select Note to add one.</div>';
+            return;
+          }
+
+          keys.forEach((k) => {
+            const p = parseVKey(k);
+            const card = document.createElement('div');
+            card.className = 'card';
+
+            const top = document.createElement('div');
+            top.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:8px;';
+
+            const refBtn = document.createElement('button');
+            refBtn.type = 'button';
+            refBtn.style.cssText = 'font-size:13px;font-weight:700;color:var(--accent-hi);text-align:left;';
+            refBtn.textContent = `${p.book} ${p.chapter}:${p.verse}`;
+            refBtn.addEventListener('click', () => {
+              closeAllModals();
+              loadChapter(p.book, p.chapter, { targetVerse: p.verse });
+            });
+
+            const btns = document.createElement('div');
+            btns.style.cssText = 'display:flex;gap:6px;';
+
+            const editBtn = document.createElement('button');
+            editBtn.type = 'button';
+            editBtn.className = 'mini-btn';
+            editBtn.textContent = editingModalNoteKey === k ? 'Cancel' : 'Edit';
+            editBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              editingModalNoteKey = editingModalNoteKey === k ? null : k;
+              renderStudyPanels();
+            });
+
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.className = 'mini-btn is-danger';
+            delBtn.textContent = 'Delete';
+            delBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              delete state.notes[k];
+              if (editingModalNoteKey === k) editingModalNoteKey = null;
+              saveState();
+              renderVerses();
+              renderStudyPanels();
+              toast('Note deleted');
+            });
+
+            btns.appendChild(editBtn);
+            btns.appendChild(delBtn);
+            top.appendChild(refBtn);
+            top.appendChild(btns);
+            card.appendChild(top);
+
+            if (editingModalNoteKey === k) {
+              const ta = document.createElement('textarea');
+              ta.className = 'note-area';
+              ta.style.marginTop = '8px';
+              ta.value = state.notes[k];
+              card.appendChild(ta);
+
+              const saveRow = document.createElement('div');
+              saveRow.style.cssText = 'display:flex;justify-content:flex-end;margin-top:6px;';
+              const saveBtn = document.createElement('button');
+              saveBtn.type = 'button';
+              saveBtn.className = 'mini-btn is-acc';
+              saveBtn.textContent = 'Save Note';
+              saveBtn.addEventListener('click', () => {
+                const txt = ta.value.trim();
+                if (txt) state.notes[k] = txt;
+                else delete state.notes[k];
+                editingModalNoteKey = null;
+                saveState();
+                renderVerses();
+                renderStudyPanels();
+                toast(txt ? 'Note updated' : 'Note cleared');
+              });
+              saveRow.appendChild(saveBtn);
+              card.appendChild(saveRow);
+            } else {
+              const body = document.createElement('div');
+              body.style.cssText = 'font-size:13px;margin-top:6px;white-space:pre-wrap;cursor:pointer;';
+              body.textContent = state.notes[k];
+              body.addEventListener('click', () => {
+                closeAllModals();
+                loadChapter(p.book, p.chapter, { targetVerse: p.verse });
+              });
+              card.appendChild(body);
+            }
+
+            container.appendChild(card);
+          });
+        }
+
+        if (studyTab === 'plans') {
+          const container = $('panelPlans');
+          container.innerHTML = '';
+
+          READING_PLANS.forEach((plan) => {
+            const doneCount = plan.steps.filter((s) => !!state.planDone[s.id]).length;
+            const pct = Math.round((doneCount / plan.steps.length) * 100);
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                <strong style="font-size:14px;">${esc(plan.title)}</strong>
+                <span style="font-size:11px;font-weight:700;color:var(--accent-hi);">${doneCount}/${plan.steps.length}</span>
+              </div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px;">${esc(plan.desc)}</div>
+              <div class="plan-prog-bar"><div class="plan-prog-fill" style="width:${pct}%"></div></div>`;
+
+            plan.steps.forEach((step) => {
+              const checked = !!state.planDone[step.id];
+              const row = document.createElement('div');
+              row.className = 'plan-step' + (checked ? ' is-done' : '');
+
+              const lbl = document.createElement('label');
+              const chk = document.createElement('input');
+              chk.type = 'checkbox';
+              chk.checked = checked;
+              chk.addEventListener('change', () => {
+                if (chk.checked) state.planDone[step.id] = true;
+                else delete state.planDone[step.id];
+                saveState();
+                renderStudyPanels();
+              });
+              const span = document.createElement('span');
+              span.textContent = step.label;
+              lbl.appendChild(chk);
+              lbl.appendChild(span);
+
+              const readBtn = document.createElement('button');
+              readBtn.type = 'button';
+              readBtn.className = 'mini-btn is-acc';
+              readBtn.textContent = 'Read';
+              readBtn.addEventListener('click', () => {
+                closeAllModals();
+                loadChapter(step.book, step.chapter);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              });
+
+              row.appendChild(lbl);
+              row.appendChild(readBtn);
+              card.appendChild(row);
+            });
+
+            container.appendChild(card);
+          });
+        }
+      }
+
+      /* -----------------------------------------------------------------------
+         7. EVENT BINDINGS & STARTUP
+         ----------------------------------------------------------------------- */
+      function bindEvents() {
+        // Header Controls
+        $('btnBookPicker').addEventListener('click', () => {
+          renderBookList();
+          openModal('bookModal');
+        });
+        $('btnCloseBookModal').addEventListener('click', closeAllModals);
+
+        $('selTranslation').addEventListener('change', (e) => {
+          state.translation = e.target.value;
+          saveState();
+          loadChapter(state.book, state.chapter);
+        });
+
+        $('btnToggleSearch').addEventListener('click', () => {
+          const drawer = $('searchDrawer');
+          const open = drawer.classList.toggle('hidden') === false;
+          $('btnToggleSearch').classList.toggle('is-active', open);
+          if (open && $('jumpInput')) $('jumpInput').focus();
+        });
+
+        $('jumpForm').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const parsed = parseRef($('jumpInput').value);
+          if (!parsed) {
+            toast('Try a reference like "John 3:16", "Ps 23", "Rom 8", or "Gen 1"');
+            return;
+          }
+          $('jumpInput').value = '';
+          $('searchDrawer').classList.add('hidden');
+          $('btnToggleSearch').classList.remove('is-active');
+          loadChapter(parsed.book, parsed.chapter, { targetVerse: parsed.verse });
+        });
+
+        $('chapterSearchInput').addEventListener('input', (e) => {
+          chapterFilter = e.target.value;
+          renderVerses();
+        });
+
+        $('btnClearFilter').addEventListener('click', () => {
+          chapterFilter = '';
+          $('chapterSearchInput').value = '';
+          renderVerses();
+        });
+
+        $('btnAppearance').addEventListener('click', () => {
+          editingModalNoteKey = null;
+          renderStudyPanels();
+          openModal('studyModal');
+        });
+        $('btnCloseStudyModal').addEventListener('click', closeAllModals);
+        $('btnDoneStudyModal').addEventListener('click', closeAllModals);
+
+        // Chapter Prev/Next & Listen
+        const goPrev = () => {
+          const p = getAdjacent(-1);
+          if (p) {
+            loadChapter(p.book, p.chapter);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        };
+        const goNext = () => {
+          const n = getAdjacent(1);
+          if (n) {
+            loadChapter(n.book, n.chapter);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        };
+        $('btnPrevTop').addEventListener('click', goPrev);
+        $('btnNextTop').addEventListener('click', goNext);
+        $('btnPrevBottom').addEventListener('click', goPrev);
+        $('btnNextBottom').addEventListener('click', goNext);
+        $('btnListenChapter').addEventListener('click', togglePlayPause);
+
+        // Audio Dock Controls
+        $('btnAudioPlay').addEventListener('click', togglePlayPause);
+        $('btnAudioStop').addEventListener('click', stopAudio);
+        $('btnAudioPrev').addEventListener('click', () => stepVerse(-1));
+        $('btnAudioNext').addEventListener('click', () => stepVerse(1));
+        $('selDockSpeed').addEventListener('change', (e) => applyLiveSpeedChange(e.target.value));
+        $('selModalSpeed').addEventListener('change', (e) => applyLiveSpeedChange(e.target.value));
+
+        $('btnVoiceModal').addEventListener('click', () => {
+          populateBrowserVoices();
+          syncVoiceControls();
+          openModal('voiceModal');
+        });
+        $('btnCloseVoiceModal').addEventListener('click', closeAllModals);
+        $('btnDoneVoiceModal').addEventListener('click', closeAllModals);
+
+        // Book Modal Controls
+        $('testamentTabs').addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-testament]');
+          if (!btn) return;
+          bookTab = btn.dataset.testament;
+          renderBookList();
+        });
+        $('bookSearch').addEventListener('input', renderBookList);
+
+        // Voice Modal Controls
+        $('engineGroup').addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-engine]');
+          if (!btn) return;
+          state.voiceEngine = btn.dataset.engine;
+          saveState();
+          syncVoiceControls();
+        });
+        $('selAiVoice').addEventListener('change', (e) => {
+          state.aiVoice = e.target.value;
+          saveState();
+          syncVoiceControls();
+        });
+        $('selAiStyle').addEventListener('change', (e) => {
+          state.aiStyle = e.target.value;
+          saveState();
+        });
+        $('selFlowMode').addEventListener('change', (e) => {
+          state.flowMode = e.target.value;
+          saveState();
+          syncVoiceControls();
+        });
+        $('chkAutoNext').addEventListener('change', (e) => {
+          state.autoNext = !!e.target.checked;
+          saveState();
+        });
+        $('selBrowserVoice').addEventListener('change', (e) => {
+          state.browserVoice = e.target.value;
+          saveState();
+        });
+        $('inpCustomKey').addEventListener('input', (e) => {
+          safeSet(CUSTOM_KEY_STORE, e.target.value.trim());
+        });
+        $('btnClearCustomKey').addEventListener('click', () => {
+          safeSet(CUSTOM_KEY_STORE, '');
+          $('inpCustomKey').value = '';
+          toast('Custom Gemini API key cleared');
+        });
+        $('btnTestAiVoice').addEventListener('click', runTestAiVoice);
+        $('btnTestBrowserVoice').addEventListener('click', runTestBrowserVoice);
+
+        // Study Modal Controls
+        $('studyTabs').addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-stab]');
+          if (!btn) return;
+          studyTab = btn.dataset.stab;
+          editingModalNoteKey = null;
+          renderStudyPanels();
+        });
+        $('savedFilterGroup').addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-sfilter]');
+          if (!btn) return;
+          savedFilter = btn.dataset.sfilter;
+          renderStudyPanels();
+        });
+        $('savedColorGroup').addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-scolor]');
+          if (!btn) return;
+          savedColor = btn.dataset.scolor;
+          renderStudyPanels();
+        });
+        $('themeGroup').addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-theme]');
+          if (!btn) return;
+          state.theme = btn.dataset.theme;
+          saveState();
+          applyDisplay();
+        });
+        $('fontGroup').addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-font]');
+          if (!btn) return;
+          state.font = btn.dataset.font;
+          saveState();
+          applyDisplay();
+        });
+        $('btnFontMinus').addEventListener('click', () => {
+          state.fontSize = Math.max(14, state.fontSize - 1);
+          saveState();
+          applyDisplay();
+        });
+        $('btnFontPlus').addEventListener('click', () => {
+          state.fontSize = Math.min(26, state.fontSize + 1);
+          saveState();
+          applyDisplay();
+        });
+        $('btnLineSpacing').addEventListener('click', () => {
+          const idx = LINE_MODES.findIndex((x) => x.val === state.lineHeight);
+          state.lineHeight = LINE_MODES[(idx + 1) % LINE_MODES.length].val;
+          saveState();
+          applyDisplay();
+        });
+
+        // JSON Export / Import
+        $('btnExportJson').addEventListener('click', () => {
+          const blob = new Blob([JSON.stringify({
+            highlights: state.highlights,
+            notes: state.notes,
+            bookmarks: state.bookmarks,
+            planDone: state.planDone
+          }, null, 2)], { type: 'application/json' });
+          const u = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = u;
+          a.download = 'lumina-bible-study-backup.json';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(u);
+          toast('Exported study backup');
+        });
+
+        $('inpImportJson').addEventListener('change', (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const obj = JSON.parse(String(reader.result || '{}'));
+              if (obj.highlights && typeof obj.highlights === 'object') Object.assign(state.highlights, obj.highlights);
+              if (obj.notes && typeof obj.notes === 'object') Object.assign(state.notes, obj.notes);
+              if (obj.bookmarks && typeof obj.bookmarks === 'object') Object.assign(state.bookmarks, obj.bookmarks);
+              if (obj.planDone && typeof obj.planDone === 'object') Object.assign(state.planDone, obj.planDone);
+              saveState();
+              renderVerses();
+              renderStudyPanels();
+              toast('Imported study backup');
+            } catch (err) {
+              toast('Invalid JSON backup file');
+            }
+          };
+          reader.readAsText(file);
+          e.target.value = '';
+        });
+
+        // Modal Backdrop & Escape Dismissal
+        ['bookModal', 'voiceModal', 'studyModal'].forEach((id) => {
+          const el = $(id);
+          if (el) {
+            el.addEventListener('click', (e) => {
+              if (e.target === el) closeAllModals();
+            });
+          }
+        });
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') closeAllModals();
+        });
+
+        if ('speechSynthesis' in window) {
+          populateBrowserVoices();
+          try { window.speechSynthesis.onvoiceschanged = populateBrowserVoices; } catch (e) {}
+        }
+      }
+
+      bindEvents();
+      applyDisplay();
+      syncVoiceControls();
+      loadChapter(state.book, state.chapter);
+    })();
+  </script>
+</body>
+</html>
