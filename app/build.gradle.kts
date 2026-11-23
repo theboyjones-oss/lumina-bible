@@ -45,6 +45,8 @@ android {
 }
 
 dependencies {
+    // Align Kotlin stdlib versions pulled in by AndroidX (avoids duplicate-class errors)
+    implementation(platform("org.jetbrains.kotlin:kotlin-bom:1.8.22"))
     implementation("androidx.activity:activity:1.9.3")
     implementation("androidx.core:core:1.13.1")
     implementation("androidx.webkit:webkit:1.12.1")
