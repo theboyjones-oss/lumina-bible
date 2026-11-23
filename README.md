@@ -12,9 +12,7 @@ Native Android wrapper (WebView) around the single-file Lumina Bible Study app.
 - App HTML lives in `app/src/main/assets/index.html` — edit it there and push to rebuild.
 - `android-bridge.js` swaps the browser speech engine (which doesn't work in Android WebView) for Android's own Text-to-Speech, routes **Export JSON** to the Android save dialog, matches the status bar to the theme, and makes Back close open panels first.
 - **AI Voice (Gemini)** uses the current Gemini TTS models (`gemini-3.8-flash-tts`, then `gemini-3.8-flash-lite-tts`, then `gemini-2.5-pro-preview-tts`). Requests go through Android's own networking, not the web view.
-- **Gemini key**, two ways (either works):
-  1. **Built into the APK:** in the GitHub repo go to Settings → Secrets and variables → Actions → *New repository secret*, name it `GEMINI_API_KEY`, paste your key, then re-run the build. AI voice works straight after install.
-  2. **In the app:** Voice → *Gemini API Key*. A key pasted here overrides the built-in one.
-  Get a free key at https://aistudio.google.com/apikey.
+- **Gemini key:** paste it in the app under Voice → *Gemini API Key* (free from https://aistudio.google.com/apikey). It is stored only on the phone; no key is ever built into the APK.
 - Screen stays awake while a chapter is being read aloud.
-- Releases are signed with `app/lumina-release.jks` (password `lumina-bible`). Keep it — the same key lets new builds install over old ones. Bump `versionCode` in `app/build.gradle.kts` for each update.
+- Releases are signed with `app/lumina-release.jks`, whose password exists only in the `KEYSTORE_PASSWORD` repository secret. Keep that password safe — the same key lets new builds install over old ones.
+- Latest APK: https://github.com/theboyjones-oss/lumina-bible/releases/latest/download/LuminaBible.apk Bump `versionCode` in `app/build.gradle.kts` for each update.

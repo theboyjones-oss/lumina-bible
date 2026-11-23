@@ -10,12 +10,11 @@ android {
         applicationId = "com.lumina.biblestudy"
         minSdk = 24
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 3
+        versionName = "1.2"
 
-        // Optional: bake a Gemini key into the APK from the GEMINI_API_KEY build secret
-        val geminiKey = (System.getenv("GEMINI_API_KEY") ?: "").trim().replace("\"", "")
-        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
+        // No key is ever built into the APK (releases are public) - users paste their own in the app
+        buildConfigField("String", "GEMINI_API_KEY", "\"\"")
     }
 
     buildFeatures {
@@ -25,9 +24,10 @@ android {
     signingConfigs {
         create("release") {
             storeFile = file("lumina-release.jks")
-            storePassword = "lumina-bible"
+            // Keystore is password-protected; the password lives only in the KEYSTORE_PASSWORD repo secret
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
             keyAlias = "lumina"
-            keyPassword = "lumina-bible"
+            keyPassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
         }
     }
 
