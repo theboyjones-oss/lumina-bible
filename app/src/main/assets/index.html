@@ -890,6 +890,56 @@
     .plan-step.is-done span { text-decoration: line-through; color: var(--muted); }
 
     /* Toast Banner */
+    /* AI verse Meanings */
+    .mean-btn {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 1px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--accent-line);
+      background-color: transparent;
+      color: var(--accent-hi);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.7;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+    .mean-btn.is-open { background-color: var(--accent-soft); }
+    .mean-panel {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      margin: 2px 4px 12px 26px;
+      padding: 12px 13px;
+      border-radius: 12px;
+      background-color: var(--surface);
+      border: 1px solid var(--accent-line);
+    }
+    .mean-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--accent-hi);
+    }
+    .mean-body { font-size: 15px; line-height: 1.65; color: var(--text); }
+    .mean-body h4 { margin: 14px 0 4px; font-size: 13px; font-weight: 800; color: var(--accent-hi); }
+    .mean-body h4:first-child { margin-top: 2px; }
+    .mean-body p { margin: 0 0 9px; }
+    .mean-note { font-size: 13px; line-height: 1.5; color: var(--muted); margin: 0 0 9px; }
+    .mean-foot { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); }
+    .mean-loading { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--muted); padding: 6px 0; }
+    .mean-dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid var(--accent-line); border-top-color: var(--accent);
+      animation: spin 0.9s linear infinite;
+    }
+
     .toast-box {
       position: fixed;
       bottom: 118px;
@@ -1216,6 +1266,18 @@
           </div>
 
           <div>
+            <div class="lbl"><span>AI Meanings</span></div>
+            <label for="chkShowMeanings" class="toggle-row" style="margin-bottom:6px;">
+              <span>Show "Meanings" button on verses</span>
+              <input id="chkShowMeanings" type="checkbox" checked />
+            </label>
+            <div style="display:flex;gap:6px;">
+              <input id="inpMeaningKey" type="password" class="text-input" placeholder="Gemini API key (aistudio.google.com/apikey)" autocomplete="off" />
+              <button id="btnClearMeaningKey" type="button" class="mini-btn" style="flex-shrink:0;">Clear</button>
+            </div>
+          </div>
+
+          <div>
             <div class="lbl"><span>Study Backup (JSON)</span></div>
             <div class="grid-2">
               <button id="btnExportJson" type="button" class="seg-btn">Export JSON</button>
@@ -1492,7 +1554,8 @@
         speed: 1.0,
         pitch: 1.0,
         autoNext: true,
-        voice: ''
+        voice: '',
+        showMeanings: true
       };
 
       let state = Object.assign({}, DEFAULTS);
@@ -1804,6 +1867,7 @@
         audio.token++;
         const tok = audio.token;
         cancelSpeech();
+        endDiscussionSpeech();
 
         const from = Math.max(0, Math.min(verses.length - 1, startVerseIdx || 0));
         audio.verseIdx = from;
@@ -1854,6 +1918,7 @@
       function stopAudio() {
         audio.token++;
         cancelSpeech();
+        endDiscussionSpeech();
         audio.status = 'idle';
         audio.verseIdx = -1;
         highlightSpeaking(false);
@@ -1958,6 +2023,312 @@
       }
 
       /* -----------------------------------------------------------------------
+         4b. AI VERSE MEANINGS (Google Gemini text, read aloud with device voices)
+             Key is entered by the user and stored only on this device.
+         ----------------------------------------------------------------------- */
+      const MEANING_KEY_STORE = 'lumina_gemini_key';
+      const MEANING_CACHE_KEY = 'lumina_meanings_v1';
+      const MEANING_MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-flash-latest', 'gemini-3.5-flash-lite'];
+      const openMeanings = new Set();
+      const meaningState = {};   // vKey -> { status: loading|ready|error|needkey, text, err }
+      let meaningModelIdx = 0;
+      let discSpeakingKey = null;
+
+      let meaningCache = {};
+      try {
+        const mc = JSON.parse(safeGet(MEANING_CACHE_KEY) || 'null');
+        if (mc && typeof mc === 'object') meaningCache = mc;
+      } catch (e) {}
+
+      function getMeaningKey() { return (safeGet(MEANING_KEY_STORE) || '').trim(); }
+      function setMeaningKey(k) { safeSet(MEANING_KEY_STORE, String(k || '').trim()); }
+      function meaningCacheId(k) { return `${state.translation}|${k}`; }
+
+      function saveMeaningCache() {
+        const keys = Object.keys(meaningCache);
+        while (keys.length > 200) delete meaningCache[keys.shift()];
+        safeSet(MEANING_CACHE_KEY, JSON.stringify(meaningCache));
+      }
+
+      function meaningPrompt(v) {
+        const i = verses.findIndex((x) => x.verse === v.verse);
+        const before = verses.slice(Math.max(0, i - 2), i).map((x) => `${x.verse}. ${x.text}`).join(' ');
+        const after = verses.slice(i + 1, i + 3).map((x) => `${x.verse}. ${x.text}`).join(' ');
+        return `Write a study discussion of about 500 words on ${state.book} ${state.chapter}:${v.verse} (${state.translation.toUpperCase()}):\n"${v.text}"\n\n` +
+          (before ? `Preceding verses: ${before}\n` : '') +
+          (after ? `Following verses: ${after}\n` : '') +
+          `\nUse these short section headings, each on its own line starting with "## ": Context, Key Words, Meaning, Cross-References, Reflection.\n` +
+          `Under Key Words, explain one or two important original-language (Hebrew/Aramaic/Greek) terms where helpful.\n` +
+          `Be faithful to the text and historically informed. Where Christian traditions understand the verse differently, briefly note the main views fairly without taking sides.\n` +
+          `Write in warm, clear British English for an ordinary reader. Plain text only apart from the ## headings; no introduction or sign-off.`;
+      }
+
+      async function requestMeaning(model, key, prompt) {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: 'You are a careful, respectful Bible study companion who writes accurate, balanced commentary.' }] },
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.6 }
+          })
+        });
+        let data = null;
+        try { data = await res.json(); } catch (e) {}
+        if (!res.ok) {
+          const err = new Error((data && data.error && data.error.message) || `HTTP ${res.status}`);
+          err.status = res.status;
+          throw err;
+        }
+        const parts = (data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
+        const text = parts.filter((p) => p && p.text && !p.thought).map((p) => p.text).join('').trim();
+        if (!text) {
+          const block = data && data.promptFeedback && data.promptFeedback.blockReason;
+          const err = new Error(block ? `Blocked (${block})` : 'No text returned');
+          err.status = 502;
+          throw err;
+        }
+        return text;
+      }
+
+      async function loadMeaning(v, k, force) {
+        const key = getMeaningKey();
+        if (!key) {
+          meaningState[k] = { status: 'needkey' };
+          refreshMeaningPanel(k);
+          return;
+        }
+        const cid = meaningCacheId(k);
+        if (!force && meaningCache[cid]) {
+          meaningState[k] = { status: 'ready', text: meaningCache[cid] };
+          refreshMeaningPanel(k);
+          return;
+        }
+        meaningState[k] = { status: 'loading' };
+        refreshMeaningPanel(k);
+        const prompt = meaningPrompt(v);
+        let idx = meaningModelIdx;
+        while (true) {
+          try {
+            const text = await requestMeaning(MEANING_MODELS[idx], key, prompt);
+            meaningModelIdx = idx;
+            meaningCache[cid] = text;
+            saveMeaningCache();
+            meaningState[k] = { status: 'ready', text };
+            break;
+          } catch (err) {
+            const st = err.status || 0;
+            const msg = err.message || 'Network error';
+            const modelProblem = st === 404 || st === 429 || (st === 400 && /model|not found|not supported/i.test(msg));
+            if (modelProblem && idx + 1 < MEANING_MODELS.length) { idx++; continue; }
+            if (st === 400 && /api key|API_KEY/i.test(msg) || st === 401 || st === 403) {
+              meaningState[k] = { status: 'needkey', err: 'That key was not accepted by Google. Please check it and try again.' };
+            } else {
+              meaningState[k] = { status: 'error', err: st ? `${msg} (HTTP ${st})` : `Couldn't reach Gemini. Check your internet connection. (${msg})` };
+            }
+            break;
+          }
+        }
+        refreshMeaningPanel(k);
+      }
+
+      function formatMeaning(text) {
+        const inline = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>');
+        return String(text).split(/\n+/).map((line) => {
+          const t = line.trim();
+          if (!t) return '';
+          const h = t.match(/^#{1,4}\s*(.+)$/);
+          if (h) return `<h4>${inline(h[1].replace(/\*\*/g, ''))}</h4>`;
+          return `<p>${inline(t.replace(/^[-•]\s+/, '• '))}</p>`;
+        }).join('');
+      }
+
+      function speechTextOf(text) {
+        return String(text).split(/\n+/).map((l) => l.replace(/^#{1,4}\s*/, '').replace(/\*\*|\*/g, '').trim()).filter(Boolean);
+      }
+
+      function endDiscussionSpeech() {
+        if (!discSpeakingKey) return;
+        const k = discSpeakingKey;
+        discSpeakingKey = null;
+        try { if (window.AndroidBridge && window.AndroidBridge.setPlaying) window.AndroidBridge.setPlaying(false); } catch (e) {}
+        refreshMeaningPanel(k);
+      }
+
+      function speakDiscussion(k) {
+        const ms = meaningState[k];
+        if (!ms || ms.status !== 'ready' || !hasSpeech()) return;
+        stopAudio();                      // stops chapter reading or another discussion
+        const tok = audio.token;
+        const p = parseVKey(k);
+        const lines = [`${p.book} chapter ${p.chapter}, verse ${p.verse}.`].concat(speechTextOf(ms.text));
+        discSpeakingKey = k;
+        try { if (window.AndroidBridge && window.AndroidBridge.setPlaying) window.AndroidBridge.setPlaying(true); } catch (e) {}
+        if ($('audioL1')) $('audioL1').textContent = `Reading discussion • ${p.book} ${p.chapter}:${p.verse}`;
+        let last = null;
+        lines.forEach((line) => {
+          splitLong(line).forEach((part) => {
+            const u = makeUtterance(part);
+            u.onerror = (ev) => {
+              const c = ev && ev.error;
+              if (tok !== audio.token || c === 'canceled' || c === 'interrupted') return;
+              if (u === last) { endDiscussionSpeech(); updateAudioUI(); }
+            };
+            audio.queue.push(u);
+            last = u;
+            window.speechSynthesis.speak(u);
+          });
+          if (window.speechSynthesis.speakSilence) window.speechSynthesis.speakSilence(350);
+        });
+        if (last) {
+          last.onend = () => {
+            if (tok !== audio.token) return;
+            endDiscussionSpeech();
+            updateAudioUI();
+          };
+        }
+        refreshMeaningPanel(k);
+      }
+
+      function toggleMeaning(v, k) {
+        if (openMeanings.has(k)) {
+          openMeanings.delete(k);
+          if (discSpeakingKey === k) stopAudio();
+        } else {
+          openMeanings.add(k);
+          const ms = meaningState[k];
+          if (!ms || ms.status === 'error' || ms.status === 'needkey') loadMeaning(v, k, false);
+        }
+        renderVerses();
+      }
+
+      function refreshMeaningPanel(k) {
+        const el = document.querySelector(`.mean-panel[data-key="${CSS.escape(k)}"]`);
+        if (!el) return;
+        const p = parseVKey(k);
+        const v = verses.find((x) => x.verse === p.verse) || { verse: p.verse, text: '' };
+        el.replaceWith(buildMeaningPanel(v, k));
+      }
+
+      function buildMeaningPanel(v, k) {
+        const ms = meaningState[k] || { status: 'loading' };
+        const box = document.createElement('div');
+        box.className = 'mean-panel';
+        box.dataset.key = k;
+        box.addEventListener('click', (e) => e.stopPropagation());
+
+        const head = document.createElement('div');
+        head.className = 'mean-head';
+        head.innerHTML = `<span>Meaning • ${esc(state.book)} ${state.chapter}:${v.verse}</span>`;
+        const close = document.createElement('button');
+        close.type = 'button';
+        close.className = 'mini-btn';
+        close.textContent = 'Close';
+        close.addEventListener('click', () => toggleMeaning(v, k));
+        head.appendChild(close);
+        box.appendChild(head);
+
+        if (ms.status === 'loading') {
+          const l = document.createElement('div');
+          l.className = 'mean-loading';
+          l.innerHTML = '<span class="mean-dot"></span> Writing a discussion of this verse…';
+          box.appendChild(l);
+          return box;
+        }
+
+        if (ms.status === 'needkey') {
+          const d = document.createElement('div');
+          d.innerHTML = `<p class="mean-note">${ms.err ? `<strong style="color:var(--err-text)">${esc(ms.err)}</strong><br>` : ''}Meanings are written by Google's Gemini AI. Paste your free API key from <a href="https://aistudio.google.com/apikey" style="color:var(--accent-hi);">aistudio.google.com/apikey</a> — it's saved only on this phone.</p>`;
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex;gap:6px;';
+          const inp = document.createElement('input');
+          inp.type = 'password';
+          inp.className = 'text-input';
+          inp.placeholder = 'Paste Gemini API key…';
+          inp.autocomplete = 'off';
+          const go = document.createElement('button');
+          go.type = 'button';
+          go.className = 'go-btn';
+          go.textContent = 'Save';
+          go.addEventListener('click', () => {
+            if (!inp.value.trim()) return;
+            setMeaningKey(inp.value);
+            syncMeaningKeyField();
+            loadMeaning(v, k, false);
+          });
+          row.appendChild(inp);
+          row.appendChild(go);
+          d.appendChild(row);
+          box.appendChild(d);
+          return box;
+        }
+
+        if (ms.status === 'error') {
+          const d = document.createElement('div');
+          d.innerHTML = `<p class="mean-note" style="color:var(--err-text);">${esc(ms.err || 'Something went wrong.')}</p>`;
+          const retry = document.createElement('button');
+          retry.type = 'button';
+          retry.className = 'mini-btn is-acc';
+          retry.textContent = 'Try again';
+          retry.addEventListener('click', () => loadMeaning(v, k, true));
+          d.appendChild(retry);
+          box.appendChild(d);
+          return box;
+        }
+
+        const speaking = discSpeakingKey === k;
+        const actions = document.createElement('div');
+        actions.className = 'v-tools';
+        actions.style.marginBottom = '8px';
+        const listen = document.createElement('button');
+        listen.type = 'button';
+        listen.className = 'mini-btn is-acc';
+        listen.textContent = speaking ? '■ Stop reading' : '▶ Read it to me';
+        listen.addEventListener('click', () => {
+          if (discSpeakingKey === k) stopAudio();
+          else speakDiscussion(k);
+        });
+        const copy = document.createElement('button');
+        copy.type = 'button';
+        copy.className = 'mini-btn';
+        copy.textContent = 'Copy';
+        copy.addEventListener('click', () => {
+          const t = `${state.book} ${state.chapter}:${v.verse}\n\n${speechTextOf(ms.text).join('\n\n')}`;
+          toast(copyText(t) ? 'Copied discussion' : 'Copy unavailable');
+        });
+        const regen = document.createElement('button');
+        regen.type = 'button';
+        regen.className = 'mini-btn';
+        regen.textContent = 'New version';
+        regen.addEventListener('click', () => {
+          if (discSpeakingKey === k) stopAudio();
+          loadMeaning(v, k, true);
+        });
+        actions.appendChild(listen);
+        actions.appendChild(copy);
+        actions.appendChild(regen);
+        box.appendChild(actions);
+
+        const body = document.createElement('div');
+        body.className = 'mean-body';
+        body.innerHTML = formatMeaning(ms.text);
+        box.appendChild(body);
+
+        const foot = document.createElement('div');
+        foot.className = 'mean-foot';
+        foot.textContent = 'AI-generated discussion — weigh it against Scripture and trusted teaching.';
+        box.appendChild(foot);
+        return box;
+      }
+
+      function syncMeaningKeyField() {
+        const f = $('inpMeaningKey');
+        if (f) f.value = getMeaningKey();
+        const t = $('chkShowMeanings');
+        if (t) t.checked = state.showMeanings !== false;
+      }
+
+      /* -----------------------------------------------------------------------
          5. CHAPTER FETCHING, LIVE WORD FILTER & VERSE STUDY TOOLS
          ----------------------------------------------------------------------- */
       function setBanner(msg) {
@@ -2025,9 +2396,16 @@
           }
 
           const tags = (bm ? '<span class="v-tag">Saved</span>' : '') + (note ? '<span class="v-tag">Note</span>' : '');
-          row.innerHTML = `<span class="v-num">${v.verse}</span><div class="v-body">${textHtml}${tags}</div>`;
+          const meanBtn = state.showMeanings !== false
+            ? `<button type="button" class="mean-btn${openMeanings.has(k) ? ' is-open' : ''}" aria-label="Meaning of verse ${v.verse}">Meanings</button>`
+            : '';
+          row.innerHTML = `<span class="v-num">${v.verse}</span><div class="v-body">${textHtml}${tags}${meanBtn}</div>`;
 
-          row.addEventListener('click', () => {
+          row.addEventListener('click', (e) => {
+            if (e.target.closest('.mean-btn')) {
+              toggleMeaning(v, k);
+              return;
+            }
             selectedVerse = (selectedVerse === v.verse) ? null : v.verse;
             if (selectedVerse !== editingNoteVerse) editingNoteVerse = null;
             renderVerses();
@@ -2170,6 +2548,7 @@
             }
           }
 
+          if (openMeanings.has(k) && state.showMeanings !== false) wrap.appendChild(buildMeaningPanel(v, k));
           listEl.appendChild(wrap);
         });
       }
@@ -2645,6 +3024,7 @@
 
         $('btnAppearance').addEventListener('click', () => {
           editingModalNoteKey = null;
+          syncMeaningKeyField();
           renderStudyPanels();
           openModal('studyModal');
         });
@@ -2726,6 +3106,19 @@
         });
         $('btnGetGoogleVoices').addEventListener('click', () => {
           if (window.AndroidBridge && window.AndroidBridge.openPlayStore) window.AndroidBridge.openPlayStore('com.google.android.tts');
+        });
+
+        // AI Meanings settings
+        $('chkShowMeanings').addEventListener('change', (e) => {
+          state.showMeanings = !!e.target.checked;
+          saveState();
+          renderVerses();
+        });
+        $('inpMeaningKey').addEventListener('input', (e) => setMeaningKey(e.target.value));
+        $('btnClearMeaningKey').addEventListener('click', () => {
+          setMeaningKey('');
+          syncMeaningKeyField();
+          toast('Gemini key removed from this device');
         });
 
         // Study Modal Controls
