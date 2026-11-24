@@ -2110,7 +2110,7 @@
           `Use these short section headings, each on its own line starting with "## ": Context, Key Words, Meaning, Cross-References, Reflection.\n` +
           `Under Key Words, explain one or two important original-language (Hebrew/Aramaic/Greek) terms where helpful.\n` +
           `Be faithful to the text and historically informed. Where Christian traditions understand the verse differently, briefly note the main views fairly without taking sides.\n` +
-          `Write in warm, clear British English for an ordinary reader. Plain text only apart from the ## headings; no introduction or sign-off.`;
+          `Write in warm, clear British English for an ordinary reader. Plain text only apart from the ## headings (no tables); no introduction or sign-off.`;
       }
 
       async function requestMeaning(model, key, prompt) {
@@ -2251,9 +2251,18 @@
 
       function formatMeaning(text) {
         const inline = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>');
+        let tableHeader = true;
         return String(text).split(/\n+/).map((line) => {
-          const t = line.trim();
+          let t = line.trim();
           if (!t) return '';
+          // Markdown tables: drop the header and separator rows, show each row as a readable line
+          if (/^\|.*\|$/.test(t)) {
+            if (/^\|[\s:|-]+\|$/.test(t)) return '';
+            const cells = t.slice(1, -1).split('|').map((c) => c.trim()).filter(Boolean);
+            if (tableHeader) { tableHeader = false; return ''; }
+            return `<p>• ${inline(cells.join(' — '))}</p>`;
+          }
+          tableHeader = true;
           const h = t.match(/^#{1,4}\s*(.+)$/);
           if (h) return `<h4>${inline(h[1].replace(/\*\*/g, ''))}</h4>`;
           return `<p>${inline(t.replace(/^[-•]\s+/, '• '))}</p>`;
@@ -2541,7 +2550,7 @@
       /* --- Prompts --- */
       const STUDY_RULES = 'Rules: write Bible references in full form such as "Romans 8:28" or "Psalm 23:1-4"; ' +
         'be faithful to the text and historically informed; where Christian traditions differ, summarise the main views fairly without taking sides; ' +
-        'do not state facts you are unsure of; warm, clear British English; plain text apart from "## " headings and simple "- " bullet points; no introduction or sign-off.';
+        'do not state facts you are unsure of; never invent chapter numbers, dates or details; do not use tables; warm, clear British English; plain text apart from "## " headings and simple "- " bullet points; no introduction or sign-off.';
 
       function chapterTextForPrompt() {
         const t = verses.map((v) => `${v.verse} ${v.text}`).join(' ');
