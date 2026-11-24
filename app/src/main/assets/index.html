@@ -1271,8 +1271,9 @@
               <span>Show "Meanings" button on verses</span>
               <input id="chkShowMeanings" type="checkbox" checked />
             </label>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:6px;line-height:1.45;">Meanings work free with no key. Optionally add a Gemini key (aistudio.google.com/apikey) for higher-quality discussions.</div>
             <div style="display:flex;gap:6px;">
-              <input id="inpMeaningKey" type="password" class="text-input" placeholder="Gemini API key (aistudio.google.com/apikey)" autocomplete="off" />
+              <input id="inpMeaningKey" type="password" class="text-input" placeholder="Optional Gemini key for richer answers" autocomplete="off" />
               <button id="btnClearMeaningKey" type="button" class="mini-btn" style="flex-shrink:0;">Clear</button>
             </div>
           </div>
@@ -2023,8 +2024,9 @@
       }
 
       /* -----------------------------------------------------------------------
-         4b. AI VERSE MEANINGS (Google Gemini text, read aloud with device voices)
-             Key is entered by the user and stored only on this device.
+         4b. AI VERSE MEANINGS — read aloud with device voices
+             Default: free keyless AI (Pollinations.ai, ~1 reply / 45s per connection)
+             Optional: user's own Gemini key (higher quality), stored only on this device.
          ----------------------------------------------------------------------- */
       const MEANING_KEY_STORE = 'lumina_gemini_key';
       const MEANING_CACHE_KEY = 'lumina_meanings_v1';
@@ -2057,7 +2059,8 @@
         return `Write a study discussion of about 500 words on ${state.book} ${state.chapter}:${v.verse} (${state.translation.toUpperCase()}):\n"${v.text}"\n\n` +
           (before ? `Preceding verses: ${before}\n` : '') +
           (after ? `Following verses: ${after}\n` : '') +
-          `\nUse these short section headings, each on its own line starting with "## ": Context, Key Words, Meaning, Cross-References, Reflection.\n` +
+          `\nLength: 400-500 words. Never state the verse's numerical position in the chapter or book.\n` +
+          `Use these short section headings, each on its own line starting with "## ": Context, Key Words, Meaning, Cross-References, Reflection.\n` +
           `Under Key Words, explain one or two important original-language (Hebrew/Aramaic/Greek) terms where helpful.\n` +
           `Be faithful to the text and historically informed. Where Christian traditions understand the verse differently, briefly note the main views fairly without taking sides.\n` +
           `Write in warm, clear British English for an ordinary reader. Plain text only apart from the ## headings; no introduction or sign-off.`;
@@ -2091,13 +2094,62 @@
         return text;
       }
 
+      const FREE_SYSTEM = 'You are a careful, respectful Bible study companion who writes accurate, balanced commentary.';
+
+      async function requestFreeMeaning(prompt) {
+        const res = await fetch('https://text.pollinations.ai/openai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'openai',
+            messages: [{ role: 'system', content: FREE_SYSTEM }, { role: 'user', content: prompt }]
+          })
+        });
+        const raw = await res.text();
+        let data = null;
+        try { data = JSON.parse(raw); } catch (e) {}
+        if (!res.ok || (data && data.success === false)) {
+          const msg = (data && data.error && (data.error.message || data.error)) || `HTTP ${res.status}`;
+          const err = new Error(String(msg));
+          err.status = res.status || 500;
+          const m = String(msg).match(/retry after\s+(\d+)\s*s/i);
+          err.retryAfter = m ? parseInt(m[1], 10) : ((res.status === 402 || res.status === 429) ? 45 : 0);
+          throw err;
+        }
+        const text = data && data.choices && data.choices[0] && data.choices[0].message
+          ? String(data.choices[0].message.content || '') : raw;
+        if (!text.trim()) throw new Error('No text returned');
+        return text.trim();
+      }
+
+      // Free service: if it asks us to wait, show a countdown and retry automatically
+      async function freeWithWait(k, prompt) {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            return await requestFreeMeaning(prompt);
+          } catch (err) {
+            if (!err.retryAfter || attempt === 2 || !openMeanings.has(k)) throw err;
+            let left = Math.min(90, err.retryAfter + 1);
+            meaningState[k] = { status: 'loading', wait: left };
+            refreshMeaningPanel(k);
+            while (left > 0) {
+              await new Promise((r) => setTimeout(r, 1000));
+              left--;
+              if (meaningState[k] && meaningState[k].wait != null) {
+                meaningState[k].wait = left;
+                const el = document.querySelector(`.mean-panel[data-key="${CSS.escape(k)}"] .mean-wait`);
+                if (el) el.textContent = String(left);
+              }
+            }
+            meaningState[k] = { status: 'loading' };
+            refreshMeaningPanel(k);
+          }
+        }
+        throw new Error('The free AI service is busy. Please try again shortly.');
+      }
+
       async function loadMeaning(v, k, force) {
         const key = getMeaningKey();
-        if (!key) {
-          meaningState[k] = { status: 'needkey' };
-          refreshMeaningPanel(k);
-          return;
-        }
         const cid = meaningCacheId(k);
         if (!force && meaningCache[cid]) {
           meaningState[k] = { status: 'ready', text: meaningCache[cid] };
@@ -2107,6 +2159,24 @@
         meaningState[k] = { status: 'loading' };
         refreshMeaningPanel(k);
         const prompt = meaningPrompt(v);
+
+        const done = (text) => {
+          meaningCache[cid] = text;
+          saveMeaningCache();
+          meaningState[k] = { status: 'ready', text };
+          refreshMeaningPanel(k);
+        };
+        const freePath = async () => {
+          try {
+            done(await freeWithWait(k, prompt));
+          } catch (err) {
+            meaningState[k] = { status: 'error', err: `Couldn't get a discussion from the free AI service. ${err.message || ''}`.trim() };
+            refreshMeaningPanel(k);
+          }
+        };
+
+        if (!key) { await freePath(); return; }
+
         let idx = meaningModelIdx;
         while (true) {
           try {
@@ -2121,12 +2191,12 @@
             const msg = err.message || 'Network error';
             const modelProblem = st === 404 || st === 429 || (st === 400 && /model|not found|not supported/i.test(msg));
             if (modelProblem && idx + 1 < MEANING_MODELS.length) { idx++; continue; }
-            if (st === 400 && /api key|API_KEY/i.test(msg) || st === 401 || st === 403) {
-              meaningState[k] = { status: 'needkey', err: 'That key was not accepted by Google. Please check it and try again.' };
-            } else {
-              meaningState[k] = { status: 'error', err: st ? `${msg} (HTTP ${st})` : `Couldn't reach Gemini. Check your internet connection. (${msg})` };
+            // Gemini unavailable (bad key, quota, network): fall back to the free service
+            if ((st === 400 && /api key|API_KEY/i.test(msg)) || st === 401 || st === 403) {
+              toast('Your Gemini key was not accepted — using the free AI instead');
             }
-            break;
+            await freePath();
+            return;
           }
         }
         refreshMeaningPanel(k);
@@ -2197,7 +2267,7 @@
         } else {
           openMeanings.add(k);
           const ms = meaningState[k];
-          if (!ms || ms.status === 'error' || ms.status === 'needkey') loadMeaning(v, k, false);
+          if (!ms || ms.status === 'error') loadMeaning(v, k, false);
         }
         renderVerses();
       }
@@ -2231,7 +2301,9 @@
         if (ms.status === 'loading') {
           const l = document.createElement('div');
           l.className = 'mean-loading';
-          l.innerHTML = '<span class="mean-dot"></span> Writing a discussion of this verse…';
+          l.innerHTML = ms.wait != null
+            ? `<span class="mean-dot"></span><span>The free AI writes one discussion every 45 seconds — yours starts in <b class="mean-wait">${ms.wait}</b>s…</span>`
+            : '<span class="mean-dot"></span> Writing a discussion of this verse…';
           box.appendChild(l);
           return box;
         }
