@@ -308,6 +308,15 @@ public class MainActivity extends ComponentActivity {
         }
 
         @JavascriptInterface
+        public String getAppVersion() {
+            try {
+                return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            } catch (Exception e) {
+                return "";
+            }
+        }
+
+        @JavascriptInterface
         public void openSystemTtsSettings() {
             runOnUiThread(MainActivity.this::openTts);
         }

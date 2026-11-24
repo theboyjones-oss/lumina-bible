@@ -975,6 +975,7 @@
       border: 1px solid var(--border-hi); color: var(--accent-hi); font-size: 12px; font-weight: 700;
     }
     .home-tile span { color: var(--text); }
+    .home-version { margin: 22px 0 6px; text-align: center; font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.03em; }
     .home-tile:hover { background-color: var(--hover); border-color: var(--accent-line); }
 
     /* Roomier top bar & search (overrides) */
@@ -3086,6 +3087,10 @@
       };
       const icon = (k) => `<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="${ICONS[k]}"/></svg>`;
 
+      function appVersion() {
+        try { return (window.AndroidBridge && window.AndroidBridge.getAppVersion) ? String(window.AndroidBridge.getAppVersion() || '') : ''; } catch (e) { return ''; }
+      }
+
       function dayOfYear() {
         const n = new Date();
         return Math.floor((n - new Date(n.getFullYear(), 0, 0)) / 86400000);
@@ -3207,6 +3212,8 @@
           }).join('')}</div>` : ''}
 
           <div id="homeRecentStudies"></div>
+
+          <div class="home-version">Lumina Bible${appVersion() ? ' • Version ' + esc(appVersion()) : ''}</div>
         `;
 
         // Reading plans progress + next step

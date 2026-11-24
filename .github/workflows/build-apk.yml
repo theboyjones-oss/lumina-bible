@@ -34,6 +34,9 @@ jobs:
         run: gradle :app:assembleRelease --no-daemon
       - name: Rename APK
         run: cp app/build/outputs/apk/release/app-release.apk LuminaBible.apk
+      - name: Read app version
+        id: ver
+        run: echo "name=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         with:
           name: LuminaBible-apk
@@ -41,7 +44,7 @@ jobs:
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v2.5.1-build-${{ github.run_number }}
-          name: Lumina Bible 2.5.1 (build ${{ github.run_number }})
+          tag_name: v${{ steps.ver.outputs.name }}-build-${{ github.run_number }}
+          name: Lumina Bible ${{ steps.ver.outputs.name }}
           make_latest: true
           files: LuminaBible.apk
