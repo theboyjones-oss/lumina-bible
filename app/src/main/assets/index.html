@@ -940,6 +940,22 @@
       animation: spin 0.9s linear infinite;
     }
 
+    /* Study centre */
+    .hub-box { width: min(640px, calc(100vw - 1rem)); max-height: calc(100dvh - 1rem); }
+    .hub-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .hub-panel { display: flex; flex-direction: column; }
+    .hub-recent { display: flex; flex-wrap: wrap; gap: 6px; }
+    .hub-body { margin-top: 2px; }
+    #hubResult { margin-top: 12px; }
+    #hubResult:empty { display: none; }
+    a.ref-link { color: var(--accent-hi); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+    .study-btn {
+      height: 36px; padding: 0 12px; border-radius: 9px;
+      background-color: var(--accent-soft); border: 1px solid var(--accent-line);
+      color: var(--accent-hi); font-size: 13px; font-weight: 700;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+
     .toast-box {
       position: fixed;
       bottom: 118px;
@@ -1026,6 +1042,10 @@
         <button id="btnListenChapter" type="button" class="listen-btn">
           <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
           <span id="lblListen">Listen to Chapter</span>
+        </button>
+        <button id="btnStudyHub" type="button" class="study-btn" aria-label="Open Bible study tools">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          Study
         </button>
         <button id="btnPrevTop" type="button" class="nav-btn">&#8249; Prev</button>
         <button id="btnNextTop" type="button" class="nav-btn">Next &#8250;</button>
@@ -1318,6 +1338,29 @@
     </div>
   </div>
 
+  <!-- =========================================================================
+       STUDY CENTRE MODAL (#hubModal)
+       ========================================================================= -->
+  <div id="hubModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="hubTitle">
+    <div class="modal-box hub-box">
+      <div class="modal-head">
+        <h2 id="hubTitle">Bible Study</h2>
+        <button id="btnCloseHub" type="button" class="close-btn" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="hubTabs" class="hub-tabs">
+          <button type="button" data-htab="guide" class="seg-btn is-active">Chapter Guide</button>
+          <button type="button" data-htab="journal" class="seg-btn">My Journal</button>
+          <button type="button" data-htab="ask" class="seg-btn">Ask</button>
+          <button type="button" data-htab="topic" class="seg-btn">Topic</button>
+          <button type="button" data-htab="person" class="seg-btn">People</button>
+          <button type="button" data-htab="word" class="seg-btn">Word Study</button>
+        </div>
+        <div id="hubPanel"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Non-Blocking Toast Banner -->
   <div id="toastBox" class="toast-box hidden" aria-live="polite"></div>
 
@@ -1551,6 +1594,8 @@
         notes: {},
         bookmarks: {},
         planDone: {},
+        journal: {},
+        studied: {},
         flowMode: 'smooth',
         speed: 1.0,
         pitch: 1.0,
@@ -1567,6 +1612,8 @@
         }
         ['voiceEngine', 'aiVoice', 'aiStyle', 'browserVoice'].forEach((k) => { delete state[k]; });
         if (!state.planDone || typeof state.planDone !== 'object') state.planDone = {};
+        if (!state.journal || typeof state.journal !== 'object') state.journal = {};
+        if (!state.studied || typeof state.studied !== 'object') state.studied = {};
       } catch (e) {}
 
       let chapterCache = {};
@@ -2222,19 +2269,26 @@
         const k = discSpeakingKey;
         discSpeakingKey = null;
         try { if (window.AndroidBridge && window.AndroidBridge.setPlaying) window.AndroidBridge.setPlaying(false); } catch (e) {}
-        refreshMeaningPanel(k);
+        if (k.indexOf('study:') === 0) onStudySpeechChange();
+        else refreshMeaningPanel(k);
       }
 
       function speakDiscussion(k) {
         const ms = meaningState[k];
-        if (!ms || ms.status !== 'ready' || !hasSpeech()) return;
+        if (!ms || ms.status !== 'ready') return;
+        const p = parseVKey(k);
+        speakLongText(k, `${p.book} chapter ${p.chapter}, verse ${p.verse}.`, `Reading discussion • ${p.book} ${p.chapter}:${p.verse}`, ms.text);
+      }
+
+      // Reads any AI text aloud (Meanings and Study), tracked by key k
+      function speakLongText(k, intro, dockLabel, text) {
+        if (!hasSpeech()) return;
         stopAudio();                      // stops chapter reading or another discussion
         const tok = audio.token;
-        const p = parseVKey(k);
-        const lines = [`${p.book} chapter ${p.chapter}, verse ${p.verse}.`].concat(speechTextOf(ms.text));
+        const lines = [intro].concat(speechTextOf(text));
         discSpeakingKey = k;
         try { if (window.AndroidBridge && window.AndroidBridge.setPlaying) window.AndroidBridge.setPlaying(true); } catch (e) {}
-        if ($('audioL1')) $('audioL1').textContent = `Reading discussion • ${p.book} ${p.chapter}:${p.verse}`;
+        if ($('audioL1')) $('audioL1').textContent = dockLabel;
         let last = null;
         lines.forEach((line) => {
           splitLong(line).forEach((part) => {
@@ -2257,7 +2311,8 @@
             updateAudioUI();
           };
         }
-        refreshMeaningPanel(k);
+        if (k.indexOf('study:') === 0) onStudySpeechChange();
+        else refreshMeaningPanel(k);
       }
 
       function toggleMeaning(v, k) {
@@ -2383,7 +2438,7 @@
 
         const body = document.createElement('div');
         body.className = 'mean-body';
-        body.innerHTML = formatMeaning(ms.text);
+        body.innerHTML = linkifyRefs(formatMeaning(ms.text));
         box.appendChild(body);
 
         const foot = document.createElement('div');
@@ -2398,6 +2453,548 @@
         if (f) f.value = getMeaningKey();
         const t = $('chkShowMeanings');
         if (t) t.checked = state.showMeanings !== false;
+      }
+
+      /* -----------------------------------------------------------------------
+         4c. STUDY CENTRE — Chapter Guide, Journal (S.O.A.P.), Topic, People,
+             Word Study and Ask. AI uses the same providers as Meanings
+             (free keyless service, or the optional Gemini key).
+         ----------------------------------------------------------------------- */
+      const STUDY_CACHE_KEY = 'lumina_studies_v1';
+      const TOTAL_CHAPTERS = BOOKS.reduce((a, b) => a + b.ch, 0);
+      const hubState = {};        // id -> { status, text, err, wait }
+      const hubCurrent = {};      // tab -> current study id
+      let hubTab = 'guide';
+      let guideDepth = 'full';
+
+      let studyCache = {};
+      try {
+        const sc = JSON.parse(safeGet(STUDY_CACHE_KEY) || 'null');
+        if (sc && typeof sc === 'object') studyCache = sc;
+      } catch (e) {}
+
+      function saveStudyCache() {
+        const ids = Object.keys(studyCache).sort((a, b) => (studyCache[a].at || 0) - (studyCache[b].at || 0));
+        while (ids.length > 80) delete studyCache[ids.shift()];
+        safeSet(STUDY_CACHE_KEY, JSON.stringify(studyCache));
+      }
+
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+      // Shared AI text call: Gemini (if a key is set) then the free service with automatic waits
+      async function aiText(prompt, onWait) {
+        const key = getMeaningKey();
+        if (key) {
+          let idx = meaningModelIdx;
+          while (true) {
+            try {
+              const t = await requestMeaning(MEANING_MODELS[idx], key, prompt);
+              meaningModelIdx = idx;
+              return t;
+            } catch (err) {
+              const st = err.status || 0;
+              const msg = err.message || '';
+              const modelProblem = st === 404 || st === 429 || (st === 400 && /model|not found|not supported/i.test(msg));
+              if (modelProblem && idx + 1 < MEANING_MODELS.length) { idx++; continue; }
+              if ((st === 400 && /api key|API_KEY/i.test(msg)) || st === 401 || st === 403) {
+                toast('Your Gemini key was not accepted — using the free AI instead');
+              }
+              break;
+            }
+          }
+        }
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            return await requestFreeMeaning(prompt);
+          } catch (err) {
+            if (!err.retryAfter || attempt === 2) throw err;
+            let left = Math.min(90, err.retryAfter + 1);
+            while (left > 0) {
+              if (onWait) onWait(left);
+              await sleep(1000);
+              left--;
+            }
+            if (onWait) onWait(null);
+          }
+        }
+        throw new Error('The free AI service is busy. Please try again shortly.');
+      }
+
+      /* --- Tappable Bible references in AI text --- */
+      const REF_NAMES = BOOKS.map((b) => b.name).concat(['Psalm', 'Song of Songs'])
+        .sort((a, b) => b.length - a.length).map(escapeRegExp).join('|');
+      const REF_RE = new RegExp(`\\b(${REF_NAMES})\\s+(\\d{1,3})(?::(\\d{1,3})(?:\\s*[-–]\\s*\\d{1,3})?)?`, 'g');
+
+      function linkifyRefs(html) {
+        return html.replace(REF_RE, (m, b, c, v) => {
+          const book = b === 'Psalm' ? 'Psalms' : (b === 'Song of Songs' ? 'Song of Solomon' : b);
+          return `<a href="#" class="ref-link" data-book="${esc(book)}" data-ch="${c}" data-v="${v || ''}">${m}</a>`;
+        });
+      }
+
+      function jumpToRef(book, ch, v) {
+        closeAllModals();
+        loadChapter(book, parseInt(ch, 10) || 1, { targetVerse: v ? parseInt(v, 10) : null });
+        if (!v) window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      /* --- Prompts --- */
+      const STUDY_RULES = 'Rules: write Bible references in full form such as "Romans 8:28" or "Psalm 23:1-4"; ' +
+        'be faithful to the text and historically informed; where Christian traditions differ, summarise the main views fairly without taking sides; ' +
+        'do not state facts you are unsure of; warm, clear British English; plain text apart from "## " headings and simple "- " bullet points; no introduction or sign-off.';
+
+      function chapterTextForPrompt() {
+        const t = verses.map((v) => `${v.verse} ${v.text}`).join(' ');
+        return t.length > 9000 ? t.slice(0, 9000) + ' …' : t;
+      }
+
+      function guidePrompt(depth) {
+        const words = depth === 'quick' ? 600 : depth === 'deep' ? 2500 : 1500;
+        return `Create a comprehensive Bible study guide for ${state.book} ${state.chapter} (${state.translation.toUpperCase()}), about ${words} words.\n` +
+          `Use these sections, each heading on its own line starting with "## ":\n` +
+          `## Overview (short summary)\n## Background (author, date, audience, setting, where this chapter fits in the book)\n` +
+          `## Outline (sections with verse ranges)\n## Key Themes\n## Key Verses (2-4, with why they matter)\n` +
+          `## Word Studies (2-4 important Hebrew/Aramaic/Greek terms with transliteration and meaning)\n` +
+          `## Historical & Cultural Notes\n## Cross-References (related passages, one line each)\n` +
+          `## Interpretive Questions (where readers differ, the main views)\n` +
+          `## Discussion Questions (observation, interpretation and application questions for personal or group study)\n` +
+          `## Application\n## Prayer (a short prayer drawn from the chapter)\n` +
+          `${STUDY_RULES}\n\nChapter text for reference: ${chapterTextForPrompt()}`;
+      }
+
+      function topicPrompt(t) {
+        return `Write a topical Bible study on "${t}", about 1200 words.\nSections, each heading on its own line starting with "## ":\n` +
+          `## What the Bible Means by It\n## In the Old Testament\n## In the New Testament\n## Key Passages (6-8 passages, each with a sentence on what it teaches)\n` +
+          `## What It Teaches Us About God\n## Common Misunderstandings\n## Discussion Questions\n## Living It Out\n## Prayer\n${STUDY_RULES}`;
+      }
+
+      function personPrompt(p) {
+        return `Write a Bible character study of ${p}, about 1200 words. If the name could mean more than one biblical person, focus on the best-known and briefly note the others.\n` +
+          `Sections, each heading on its own line starting with "## ":\n## Who They Were\n## Life Timeline (key events with references)\n## Faith & Character\n` +
+          `## Strengths and Failings\n## Relationship with God\n## Legacy in Scripture\n## Lessons for Today\n## Discussion Questions\n${STUDY_RULES}`;
+      }
+
+      function wordPrompt(w) {
+        return `Write a Bible word study on the word "${w}", about 900 words.\nSections, each heading on its own line starting with "## ":\n` +
+          `## Original Words (Hebrew/Aramaic and Greek terms with transliteration, Strong's number if you are confident, and core meaning)\n` +
+          `## Use in the Old Testament\n## Use in the New Testament\n## Key Verses\n## Related Words\n## Why It Matters\n## Reflection Questions\n${STUDY_RULES}`;
+      }
+
+      function askPrompt(q) {
+        return `A reader studying ${state.book} ${state.chapter} (${state.translation.toUpperCase()}) asks: "${q}"\n` +
+          `Answer helpfully in about 300-450 words. Use "## " headings only if they genuinely help. ` +
+          `If the question is not about the Bible or faith, gently say this tool is for Bible study.\n${STUDY_RULES}\n\nChapter text for reference: ${chapterTextForPrompt()}`;
+      }
+
+      const slug = (s) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+      /* --- Running a study --- */
+      async function runStudy(tab, id, title, type, prompt, force) {
+        hubCurrent[tab] = id;
+        if (!force && studyCache[id]) {
+          hubState[id] = { status: 'ready', text: studyCache[id].text };
+          renderHubResult();
+          return;
+        }
+        if (hubState[id] && hubState[id].status === 'loading') { renderHubResult(); return; }
+        if (discSpeakingKey === 'study:' + id) stopAudio();
+        hubState[id] = { status: 'loading' };
+        renderHubResult();
+        try {
+          const text = await aiText(prompt, (secs) => {
+            hubState[id] = { status: 'loading', wait: secs };
+            const el = document.querySelector(`.hub-wait[data-id="${CSS.escape(id)}"]`);
+            if (el && secs != null) el.textContent = String(secs);
+            else renderHubResult();
+          });
+          studyCache[id] = { title, type, text, at: Date.now() };
+          saveStudyCache();
+          hubState[id] = { status: 'ready', text };
+        } catch (err) {
+          hubState[id] = { status: 'error', err: err.message || 'Something went wrong.' };
+        }
+        if (tab === 'guide' && hubTab === 'guide') renderHub();
+        else renderHubResult();
+      }
+
+      function onStudySpeechChange() { renderHubResult(); }
+
+      function renderHubResult() {
+        const box = $('hubResult');
+        if (!box) return;
+        const id = hubCurrent[hubTab];
+        box.innerHTML = '';
+        if (!id) return;
+        const ms = hubState[id] || (studyCache[id] ? { status: 'ready', text: studyCache[id].text } : null);
+        if (!ms) return;
+        const title = (studyCache[id] && studyCache[id].title) || '';
+
+        if (ms.status === 'loading') {
+          box.innerHTML = ms.wait != null
+            ? `<div class="mean-loading"><span class="mean-dot"></span><span>The free AI writes one answer every 45 seconds — yours starts in <b class="hub-wait" data-id="${esc(id)}">${ms.wait}</b>s…</span></div>`
+            : '<div class="mean-loading"><span class="mean-dot"></span> Preparing your study… (longer guides can take a minute)</div>';
+          return;
+        }
+        if (ms.status === 'error') {
+          box.innerHTML = `<p class="mean-note" style="color:var(--err-text);">${esc(ms.err)}</p>`;
+          return;
+        }
+
+        const speaking = discSpeakingKey === 'study:' + id;
+        const actions = document.createElement('div');
+        actions.className = 'v-tools';
+        actions.style.margin = '4px 0 10px';
+        const mk = (label, cls, fn) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'mini-btn' + (cls ? ' ' + cls : '');
+          b.textContent = label;
+          b.addEventListener('click', fn);
+          actions.appendChild(b);
+        };
+        mk(speaking ? '■ Stop reading' : '▶ Read it to me', 'is-acc', () => {
+          if (speaking) stopAudio();
+          else speakLongText('study:' + id, title || 'Bible study', `Reading study • ${title}`, ms.text);
+        });
+        mk('Copy', '', () => {
+          toast(copyText(`${title}\n\n${speechTextOf(ms.text).join('\n\n')}`) ? 'Copied study' : 'Copy unavailable');
+        });
+        mk('New version', '', () => regenerateCurrent());
+        box.appendChild(actions);
+
+        const body = document.createElement('div');
+        body.className = 'mean-body hub-body';
+        body.innerHTML = linkifyRefs(formatMeaning(ms.text));
+        box.appendChild(body);
+
+        const foot = document.createElement('div');
+        foot.className = 'mean-foot';
+        foot.textContent = 'AI-generated study — tap any reference to open it, and weigh everything against Scripture and trusted teaching.';
+        box.appendChild(foot);
+      }
+
+      function regenerateCurrent() {
+        const id = hubCurrent[hubTab];
+        if (!id) return;
+        const c = studyCache[id] || {};
+        const subject = id.split(':').slice(1).join(':');
+        if (hubTab === 'guide') runStudy('guide', id, c.title, 'guide', guidePrompt(guideDepth), true);
+        else if (hubTab === 'topic') runStudy('topic', id, c.title, 'topic', topicPrompt(c.subject || subject), true);
+        else if (hubTab === 'person') runStudy('person', id, c.title, 'person', personPrompt(c.subject || subject), true);
+        else if (hubTab === 'word') runStudy('word', id, c.title, 'word', wordPrompt(c.subject || subject), true);
+        else if (hubTab === 'ask' && c.subject) runStudy('ask', id, c.title, 'ask', askPrompt(c.subject), true);
+      }
+
+      /* --- Building each tab --- */
+      function chapKey() { return `${state.book}|${state.chapter}`; }
+
+      function hubSection(html) {
+        const d = document.createElement('div');
+        d.innerHTML = html;
+        return d;
+      }
+
+      function recentList(type, tab) {
+        const items = Object.keys(studyCache)
+          .filter((id) => studyCache[id].type === type)
+          .sort((a, b) => (studyCache[b].at || 0) - (studyCache[a].at || 0))
+          .slice(0, 12);
+        const wrap = document.createElement('div');
+        if (!items.length) return wrap;
+        wrap.innerHTML = '<div class="lbl" style="margin-top:4px;"><span>Your saved studies</span></div>';
+        const list = document.createElement('div');
+        list.className = 'hub-recent';
+        items.forEach((id) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'color-chip' + (hubCurrent[tab] === id ? ' is-active' : '');
+          b.textContent = studyCache[id].title;
+          b.addEventListener('click', () => {
+            hubCurrent[tab] = id;
+            hubState[id] = { status: 'ready', text: studyCache[id].text };
+            renderHub();
+          });
+          list.appendChild(b);
+        });
+        wrap.appendChild(list);
+        return wrap;
+      }
+
+      function subjectTab(tab, type, cfg) {
+        const panel = document.createElement('div');
+        panel.className = 'hub-panel';
+        panel.appendChild(hubSection(`<p class="mean-note" style="margin-bottom:8px;">${cfg.help}</p>`));
+        const row = document.createElement('form');
+        row.className = 'search-row';
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.className = 'text-input';
+        inp.placeholder = cfg.placeholder;
+        const go = document.createElement('button');
+        go.type = 'submit';
+        go.className = 'go-btn';
+        go.textContent = 'Study';
+        row.appendChild(inp);
+        row.appendChild(go);
+        const start = (val) => {
+          const v = String(val || '').trim();
+          if (!v) return;
+          const nice = v.charAt(0).toUpperCase() + v.slice(1);
+          const id = `${type}:${slug(v)}`;
+          runStudy(tab, id, `${cfg.titlePrefix}${nice}`, type, cfg.prompt(v), false).then(() => {
+            if (studyCache[id]) { studyCache[id].subject = v; saveStudyCache(); }
+            if (hubTab === tab) renderHubRecent(tab, type);
+          });
+        };
+        row.addEventListener('submit', (e) => { e.preventDefault(); start(inp.value); inp.blur(); });
+        panel.appendChild(row);
+
+        const chips = document.createElement('div');
+        chips.className = 'hub-recent';
+        chips.style.marginTop = '8px';
+        cfg.suggestions.forEach((s) => {
+          const c = document.createElement('button');
+          c.type = 'button';
+          c.className = 'color-chip';
+          c.textContent = s;
+          c.addEventListener('click', () => { inp.value = s; start(s); });
+          chips.appendChild(c);
+        });
+        panel.appendChild(chips);
+
+        const rec = document.createElement('div');
+        rec.id = 'hubRecent';
+        rec.appendChild(recentList(type, tab));
+        panel.appendChild(rec);
+        return panel;
+      }
+
+      function renderHubRecent(tab, type) {
+        const rec = $('hubRecent');
+        if (!rec) return;
+        rec.innerHTML = '';
+        rec.appendChild(recentList(type, tab));
+      }
+
+      function guideTab() {
+        const panel = document.createElement('div');
+        panel.className = 'hub-panel';
+        const studied = state.studied || {};
+        const count = Object.keys(studied).length;
+        const isStudied = !!studied[chapKey()];
+        const pct = Math.round((count / TOTAL_CHAPTERS) * 1000) / 10;
+        panel.appendChild(hubSection(
+          `<p class="mean-note" style="margin-bottom:8px;">A full study guide for <strong style="color:var(--text)">${esc(state.book)} ${state.chapter}</strong>: background, outline, themes, key verses, original-language words, cross-references, the main interpretations, discussion questions, application and prayer.</p>`));
+
+        const depth = document.createElement('div');
+        depth.className = 'grid-3';
+        [['quick', 'Quick'], ['full', 'Full'], ['deep', 'In-depth']].forEach(([val, lbl]) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'seg-btn' + (guideDepth === val ? ' is-active' : '');
+          b.textContent = lbl;
+          b.addEventListener('click', () => { guideDepth = val; renderHub(); });
+          depth.appendChild(b);
+        });
+        panel.appendChild(depth);
+
+        const id = `guide:${state.translation}|${chapKey()}|${guideDepth}`;
+        const gen = document.createElement('button');
+        gen.type = 'button';
+        gen.className = 'primary-btn';
+        gen.style.cssText = 'width:100%;margin-top:8px;';
+        gen.textContent = studyCache[id] ? 'Open saved study guide' : `Create ${guideDepth === 'deep' ? 'in-depth' : guideDepth} study guide`;
+        gen.addEventListener('click', () => runStudy('guide', id, `${state.book} ${state.chapter} study guide (${guideDepth})`, 'guide', guidePrompt(guideDepth), false));
+        panel.appendChild(gen);
+        if (studyCache[id] && !hubCurrent.guide) hubCurrent.guide = id;
+        if (hubCurrent.guide && !hubCurrent.guide.includes(`|${chapKey()}|`)) hubCurrent.guide = studyCache[id] ? id : null;
+
+        const prog = document.createElement('label');
+        prog.className = 'toggle-row';
+        prog.style.marginTop = '8px';
+        prog.innerHTML = `<span>I've studied ${esc(state.book)} ${state.chapter}<br><span style="font-size:11px;font-weight:600;color:var(--muted);">${count} of ${TOTAL_CHAPTERS} chapters studied (${pct}%)</span></span>`;
+        const chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.checked = isStudied;
+        chk.addEventListener('change', () => {
+          state.studied = state.studied || {};
+          if (chk.checked) state.studied[chapKey()] = Date.now();
+          else delete state.studied[chapKey()];
+          saveState();
+          renderHub();
+        });
+        prog.appendChild(chk);
+        panel.appendChild(prog);
+        return panel;
+      }
+
+      function journalTab() {
+        const panel = document.createElement('div');
+        panel.className = 'hub-panel';
+        const key = chapKey();
+        state.journal = state.journal || {};
+        const entry = state.journal[key] || {};
+
+        panel.appendChild(hubSection(
+          `<p class="mean-note" style="margin-bottom:6px;">Study ${esc(state.book)} ${state.chapter} in your own words using <strong style="color:var(--text)">S.O.A.P.</strong> — Scripture, Observation, Application, Prayer. Saves automatically.</p>`));
+
+        const save = () => {
+          const e = {
+            verse: sel.value,
+            obs: fields.obs.value,
+            app: fields.app.value,
+            prayer: fields.prayer.value,
+            at: Date.now()
+          };
+          if (!e.obs.trim() && !e.app.trim() && !e.prayer.trim() && !e.verse) delete state.journal[key];
+          else state.journal[key] = e;
+          saveState();
+          const st = $('journalSaved');
+          if (st) st.textContent = 'Saved ✓';
+        };
+
+        const lblS = hubSection('<div class="lbl"><span>S — Scripture that stands out</span></div>');
+        panel.appendChild(lblS);
+        const sel = document.createElement('select');
+        sel.className = 'ctrl-select';
+        sel.style.width = '100%';
+        sel.innerHTML = '<option value="">Choose a key verse…</option>' + verses.map((v) =>
+          `<option value="${v.verse}">${v.verse}. ${esc(v.text.length > 70 ? v.text.slice(0, 70) + '…' : v.text)}</option>`).join('');
+        sel.value = entry.verse || '';
+        sel.addEventListener('change', save);
+        panel.appendChild(sel);
+
+        const fields = {};
+        [
+          ['obs', 'O — Observation', 'What does it say? Who, what, where, when, why? Repeated words, contrasts, commands, promises, what it shows about God…'],
+          ['app', 'A — Application', 'What does it mean for me today? An example to follow, a wrong to avoid, a promise to hold onto, something to change?'],
+          ['prayer', 'P — Prayer', 'Write a short prayer in response to what you have read…']
+        ].forEach(([f, label, ph]) => {
+          panel.appendChild(hubSection(`<div class="lbl" style="margin-top:8px;"><span>${label}</span></div>`));
+          const ta = document.createElement('textarea');
+          ta.className = 'note-area';
+          ta.placeholder = ph;
+          ta.value = entry[f] || '';
+          ta.addEventListener('input', () => {
+            const st = $('journalSaved');
+            if (st) st.textContent = 'Saving…';
+            clearTimeout(ta._t);
+            ta._t = setTimeout(save, 500);
+          });
+          fields[f] = ta;
+          panel.appendChild(ta);
+        });
+        panel.appendChild(hubSection(`<div id="journalSaved" style="font-size:11px;color:var(--muted);text-align:right;margin-top:4px;">${entry.at ? 'Saved ' + new Date(entry.at).toLocaleDateString('en-GB') : ''}</div>`));
+
+        panel.appendChild(hubSection(`<details class="key-details" style="margin-top:8px;"><summary>Questions to guide your study</summary>
+          <div class="mean-body" style="font-size:13px;">
+          <h4>Observe</h4><p>• Who is speaking, to whom, and where? • What happens, in what order? • Which words or ideas are repeated? • What commands, promises or warnings are there? • What does this show about God?</p>
+          <h4>Interpret</h4><p>• What did this mean to its first readers? • How does it fit the chapters around it? • Where else does the Bible speak about this? • What is the main point?</p>
+          <h4>Apply</h4><p>• What should I believe, do, stop or start? • Who could I share this with? • What will I pray about today?</p>
+          </div></details>`));
+
+        const keys = Object.keys(state.journal).sort((a, b) => (state.journal[b].at || 0) - (state.journal[a].at || 0));
+        if (keys.length) {
+          panel.appendChild(hubSection(`<div class="lbl" style="margin-top:10px;"><span>All journal entries (${keys.length})</span></div>`));
+          keys.slice(0, 40).forEach((k2) => {
+            const [b, c] = k2.split('|');
+            const e = state.journal[k2];
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = 'card';
+            card.style.cssText = 'width:100%;text-align:left;margin-bottom:6px;';
+            const first = (e.obs || e.app || e.prayer || '').split('\n')[0];
+            card.innerHTML = `<strong style="font-size:13px;color:var(--accent-hi);">${esc(b)} ${esc(c)}${e.verse ? ':' + esc(e.verse) : ''}</strong>` +
+              `<span style="float:right;font-size:11px;color:var(--muted);">${e.at ? new Date(e.at).toLocaleDateString('en-GB') : ''}</span>` +
+              (first ? `<div style="font-size:12px;color:var(--muted);margin-top:3px;">${esc(first.length > 90 ? first.slice(0, 90) + '…' : first)}</div>` : '');
+            card.addEventListener('click', async () => {
+              closeAllModals();
+              await loadChapter(b, parseInt(c, 10));
+              openStudyHub('journal');
+            });
+            panel.appendChild(card);
+          });
+        }
+        return panel;
+      }
+
+      function askTab() {
+        const panel = document.createElement('div');
+        panel.className = 'hub-panel';
+        panel.appendChild(hubSection(`<p class="mean-note" style="margin-bottom:8px;">Ask anything about <strong style="color:var(--text)">${esc(state.book)} ${state.chapter}</strong> — a word, a hard passage, history, or how it applies today.</p>`));
+        const ta = document.createElement('textarea');
+        ta.className = 'note-area';
+        ta.style.minHeight = '64px';
+        ta.placeholder = 'e.g. What does "born again" mean here?';
+        panel.appendChild(ta);
+        const go = document.createElement('button');
+        go.type = 'button';
+        go.className = 'primary-btn';
+        go.style.cssText = 'width:100%;margin-top:8px;';
+        go.textContent = 'Ask';
+        go.addEventListener('click', () => {
+          const q = ta.value.trim();
+          if (!q) return;
+          const id = `ask:${chapKey()}|${slug(q)}`;
+          const title = `${state.book} ${state.chapter}: ${q.length > 50 ? q.slice(0, 50) + '…' : q}`;
+          runStudy('ask', id, title, 'ask', askPrompt(q), false).then(() => {
+            if (studyCache[id]) { studyCache[id].subject = q; saveStudyCache(); renderHubRecent('ask', 'ask'); }
+          });
+        });
+        panel.appendChild(go);
+        const rec = document.createElement('div');
+        rec.id = 'hubRecent';
+        rec.appendChild(recentList('ask', 'ask'));
+        panel.appendChild(rec);
+        return panel;
+      }
+
+      const SUBJECT_TABS = {
+        topic: {
+          help: 'Study what the whole Bible says about a theme.',
+          placeholder: 'Any topic, e.g. forgiveness',
+          titlePrefix: 'Topic: ',
+          suggestions: ['Grace', 'Forgiveness', 'Faith', 'Prayer', 'Hope', 'Anxiety', 'Salvation', 'The Holy Spirit', 'Suffering', 'Love'],
+          prompt: topicPrompt
+        },
+        person: {
+          help: 'Explore the life, faith and lessons of a Bible character.',
+          placeholder: 'Any person, e.g. Joseph',
+          titlePrefix: 'Person: ',
+          suggestions: ['Abraham', 'Moses', 'Ruth', 'David', 'Elijah', 'Esther', 'Daniel', 'Mary', 'Peter', 'Paul'],
+          prompt: personPrompt
+        },
+        word: {
+          help: 'Dig into the original Hebrew and Greek behind a key Bible word.',
+          placeholder: 'Any word, e.g. redemption',
+          titlePrefix: 'Word: ',
+          suggestions: ['Grace', 'Love', 'Righteousness', 'Faith', 'Peace', 'Glory', 'Covenant', 'Holy', 'Mercy', 'Repent'],
+          prompt: wordPrompt
+        }
+      };
+
+      function renderHub() {
+        document.querySelectorAll('#hubTabs button').forEach((b) => {
+          b.classList.toggle('is-active', b.dataset.htab === hubTab);
+        });
+        const host = $('hubPanel');
+        if (!host) return;
+        host.innerHTML = '';
+        if (hubTab === 'guide') host.appendChild(guideTab());
+        else if (hubTab === 'journal') host.appendChild(journalTab());
+        else if (hubTab === 'ask') host.appendChild(askTab());
+        else host.appendChild(subjectTab(hubTab, hubTab, SUBJECT_TABS[hubTab]));
+        const res = document.createElement('div');
+        res.id = 'hubResult';
+        host.appendChild(res);
+        if (hubTab !== 'journal') renderHubResult();
+        if ($('hubTitle')) $('hubTitle').textContent = `Bible Study • ${state.book} ${state.chapter}`;
+      }
+
+      function openStudyHub(tab) {
+        if (tab) hubTab = tab;
+        renderHub();
+        openModal('hubModal');
       }
 
       /* -----------------------------------------------------------------------
@@ -2735,7 +3332,7 @@
          6. THREE CENTERED MODALS, THEMES, SAVED, NOTES & READING PLANS
          ----------------------------------------------------------------------- */
       function closeAllModals() {
-        ['bookModal', 'voiceModal', 'studyModal'].forEach((id) => {
+        ['bookModal', 'voiceModal', 'studyModal', 'hubModal'].forEach((id) => {
           const el = $(id);
           if (el) el.classList.add('hidden');
         });
@@ -3180,6 +3777,26 @@
           if (window.AndroidBridge && window.AndroidBridge.openPlayStore) window.AndroidBridge.openPlayStore('com.google.android.tts');
         });
 
+        // Study centre
+        $('btnStudyHub').addEventListener('click', () => openStudyHub());
+        $('btnCloseHub').addEventListener('click', closeAllModals);
+        $('hubTabs').addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-htab]');
+          if (!btn) return;
+          hubTab = btn.dataset.htab;
+          renderHub();
+          const body = document.querySelector('#hubModal .modal-box');
+          if (body) body.scrollTop = 0;
+        });
+        // Tappable Bible references anywhere (capture phase so panels that stop clicks still work)
+        document.addEventListener('click', (e) => {
+          const a = e.target.closest && e.target.closest('a.ref-link');
+          if (!a) return;
+          e.preventDefault();
+          e.stopPropagation();
+          jumpToRef(a.dataset.book, a.dataset.ch, a.dataset.v);
+        }, true);
+
         // AI Meanings settings
         $('chkShowMeanings').addEventListener('change', (e) => {
           state.showMeanings = !!e.target.checked;
@@ -3250,7 +3867,9 @@
             highlights: state.highlights,
             notes: state.notes,
             bookmarks: state.bookmarks,
-            planDone: state.planDone
+            planDone: state.planDone,
+            journal: state.journal,
+            studied: state.studied
           }, null, 2)], { type: 'application/json' });
           const u = URL.createObjectURL(blob);
           const a = document.createElement('a');
@@ -3274,6 +3893,8 @@
               if (obj.notes && typeof obj.notes === 'object') Object.assign(state.notes, obj.notes);
               if (obj.bookmarks && typeof obj.bookmarks === 'object') Object.assign(state.bookmarks, obj.bookmarks);
               if (obj.planDone && typeof obj.planDone === 'object') Object.assign(state.planDone, obj.planDone);
+              if (obj.journal && typeof obj.journal === 'object') Object.assign(state.journal, obj.journal);
+              if (obj.studied && typeof obj.studied === 'object') Object.assign(state.studied, obj.studied);
               saveState();
               renderVerses();
               renderStudyPanels();
@@ -3287,7 +3908,7 @@
         });
 
         // Modal Backdrop & Escape Dismissal
-        ['bookModal', 'voiceModal', 'studyModal'].forEach((id) => {
+        ['bookModal', 'voiceModal', 'studyModal', 'hubModal'].forEach((id) => {
           const el = $(id);
           if (el) {
             el.addEventListener('click', (e) => {
