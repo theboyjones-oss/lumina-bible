@@ -127,6 +127,7 @@
       open.forEach(function (m) { m.classList.add('hidden'); });
       return 'handled';
     }
+    if (window.__luminaHomeBack && window.__luminaHomeBack()) return 'handled';
     var drawer = document.getElementById('searchDrawer');
     if (drawer && !drawer.classList.contains('hidden')) {
       drawer.classList.add('hidden');

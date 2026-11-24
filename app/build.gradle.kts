@@ -10,8 +10,8 @@ android {
         applicationId = "com.lumina.biblestudy"
         minSdk = 24
         targetSdk = 35
-        versionCode = 9
-        versionName = "2.4"
+        versionCode = 10
+        versionName = "2.5"
 
     }
 

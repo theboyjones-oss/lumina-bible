@@ -956,6 +956,27 @@
       display: inline-flex; align-items: center; gap: 6px;
     }
 
+    /* Home screen */
+    .home-greet { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 2px; }
+    .home-hero {
+      width: 100%; text-align: left; display: flex; flex-direction: column; gap: 3px;
+      padding: 16px 16px; margin-bottom: 12px; border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent-soft), var(--elev));
+      border: 1px solid var(--accent-line);
+    }
+    .home-hero-ref { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.01em; }
+    .home-hero-sub { font-size: 12px; color: var(--muted); }
+    .home-votd-text { font-family: Georgia, "Times New Roman", serif; font-size: 17px; line-height: 1.6; color: var(--text); }
+    .home-votd-ref { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 12px; font-weight: 700; color: var(--accent-hi); margin-top: 6px; }
+    .home-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .home-tile {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+      padding: 14px 6px; border-radius: 12px; background-color: var(--surface);
+      border: 1px solid var(--border-hi); color: var(--accent-hi); font-size: 12px; font-weight: 700;
+    }
+    .home-tile span { color: var(--text); }
+    .home-tile:hover { background-color: var(--hover); border-color: var(--accent-line); }
+
     .toast-box {
       position: fixed;
       bottom: 118px;
@@ -984,11 +1005,11 @@
     <div class="topbar-inner">
       <div class="topbar-row">
         <div class="brand-group">
-          <span class="brand-mark" title="Lumina Bible Study" aria-hidden="true">
+          <button id="btnHome" type="button" class="pill-btn icon-btn" title="Home" aria-label="Home">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 10.5L12 3l9 7.5M5 9v11a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V9"/>
             </svg>
-          </span>
+          </button>
           <button id="btnBookPicker" type="button" class="pill-btn" aria-label="Choose Book and Chapter">
             <span id="hdrChapter" class="trunc">John 3</span>
             <span aria-hidden="true" style="color:var(--accent-hi);font-size:11px;">&#9662;</span>
@@ -1030,7 +1051,9 @@
   <!-- =========================================================================
        2. MAIN SCRIPTURE READER (Pre-Rendered John 3:1-21 for Instant Paint)
        ========================================================================= -->
-  <main class="reader">
+  <main id="homeView" class="reader hidden" aria-label="Home"></main>
+
+  <main id="readerView" class="reader">
     <div class="badges">
       <span id="badgeTestament" class="badge badge-acc">New Testament</span>
       <span id="badgeTrans" class="badge badge-dim">WEB</span>
@@ -3018,6 +3041,257 @@
       }
 
       /* -----------------------------------------------------------------------
+         4d. HOME SCREEN
+         ----------------------------------------------------------------------- */
+      const VOTD = [
+        'John 3:16', 'Psalms 23:1', 'Philippians 4:13', 'Jeremiah 29:11', 'Romans 8:28', 'Proverbs 3:5',
+        'Isaiah 40:31', 'Joshua 1:9', 'Matthew 11:28', 'Psalms 46:1', '2 Corinthians 5:17', 'Galatians 2:20',
+        'Romans 12:2', 'Philippians 4:6', 'Hebrews 11:1', '1 Corinthians 13:4', 'Psalms 119:105', 'Lamentations 3:22',
+        'Micah 6:8', 'Matthew 6:33', 'John 14:6', 'Ephesians 2:8', 'Romans 5:8', 'Psalms 37:4', 'Isaiah 41:10',
+        '1 John 1:9', 'James 1:5', 'Colossians 3:23', 'Psalms 27:1', 'John 1:5', 'Genesis 1:1', 'Psalms 121:1',
+        'Matthew 5:9', 'Romans 15:13', '2 Timothy 1:7', 'Psalms 34:8', 'Zephaniah 3:17', 'Isaiah 26:3',
+        'Hebrews 13:5', '1 Peter 5:7', 'Deuteronomy 31:6', 'Psalms 139:14', 'John 15:5', 'Matthew 28:20',
+        'John 8:12', 'Psalms 16:11', 'Romans 10:9', 'Proverbs 16:3', 'Psalms 103:2', 'Numbers 6:24'
+      ];
+      const VOTD_CACHE = 'lumina_votd_v1';
+      let homeVisible = false;
+
+      const ICONS = {
+        books: 'M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 006.5 22H20V2H6.5A2.5 2.5 0 004 4.5v15z',
+        search: 'M11 4a7 7 0 100 14 7 7 0 000-14zM20 20l-3.5-3.5',
+        study: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
+        journal: 'M12 20h9M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4L16.5 3.5z',
+        ask: 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+        plans: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+        saved: 'M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z',
+        notes: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+        voice: 'M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z'
+      };
+      const icon = (k) => `<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="${ICONS[k]}"/></svg>`;
+
+      function dayOfYear() {
+        const n = new Date();
+        return Math.floor((n - new Date(n.getFullYear(), 0, 0)) / 86400000);
+      }
+
+      function todaysRef() {
+        return VOTD[(dayOfYear() + new Date().getFullYear()) % VOTD.length];
+      }
+
+      async function loadVerseOfDay() {
+        const ref = todaysRef();
+        const today = new Date().toISOString().slice(0, 10);
+        const ck = `${today}|${state.translation}`;
+        try {
+          const c = JSON.parse(safeGet(VOTD_CACHE) || 'null');
+          if (c && c.key === ck && c.text) return { ref, text: c.text };
+        } catch (e) {}
+        const p = parseRef(ref);
+        const off = OFFLINE[`${p.book}|${p.chapter}`];
+        const offV = off && off.find((v) => v.verse === p.verse);
+        try {
+          const res = await fetch(`https://bible-api.com/${encodeURIComponent(p.book)}+${p.chapter}:${p.verse}?translation=${state.translation}`);
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const d = await res.json();
+          const text = String(d.text || '').replace(/\s+/g, ' ').trim();
+          if (!text) throw new Error('empty');
+          safeSet(VOTD_CACHE, JSON.stringify({ key: ck, text }));
+          return { ref, text };
+        } catch (e) {
+          return { ref, text: offV ? offV.text : '' };
+        }
+      }
+
+      function showReader() {
+        homeVisible = false;
+        $('homeView').classList.add('hidden');
+        $('readerView').classList.remove('hidden');
+        $('btnHome').classList.remove('is-active');
+      }
+
+      function showHome() {
+        closeAllModals();
+        homeVisible = true;
+        renderHome();
+        $('readerView').classList.add('hidden');
+        $('homeView').classList.remove('hidden');
+        $('btnHome').classList.add('is-active');
+        window.scrollTo({ top: 0 });
+      }
+      window.__luminaHomeBack = () => {
+        if (!homeVisible) return false;
+        showReader();
+        return true;
+      };
+
+      function openStudyTabModal(tab) {
+        studyTab = tab;
+        editingModalNoteKey = null;
+        syncMeaningKeyField();
+        renderStudyPanels();
+        openModal('studyModal');
+      }
+
+      function goChapter(book, ch, opts) {
+        showReader();
+        loadChapter(book, ch, opts || {});
+        window.scrollTo({ top: 0 });
+      }
+
+      function renderHome() {
+        const el = $('homeView');
+        if (!el) return;
+        const h = new Date().getHours();
+        const greet = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+        const studiedCount = Object.keys(state.studied || {}).length;
+        const pct = Math.round((studiedCount / TOTAL_CHAPTERS) * 1000) / 10;
+        const histKeys = (state.history || []).filter((k) => k !== `${state.book}|${state.chapter}`).slice(0, 6);
+
+        el.innerHTML = `
+          <div class="home-greet">${greet}</div>
+          <h1 class="chapter-title" style="font-size:24px;margin:0 0 14px;">Lumina Bible</h1>
+
+          <button type="button" id="homeContinue" class="home-hero">
+            <span class="foot-sub">Continue reading</span>
+            <span class="home-hero-ref">${esc(state.book)} ${state.chapter}</span>
+            <span class="home-hero-sub">${state.translation.toUpperCase()} • tap to open</span>
+          </button>
+
+          <div class="card home-votd">
+            <div class="lbl"><span>Verse of the Day</span><span style="color:var(--accent-hi);">${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span></div>
+            <div id="votdText" class="home-votd-text">Loading…</div>
+            <div class="v-tools" style="margin-top:10px;">
+              <button type="button" id="votdOpen" class="mini-btn is-acc">Read in context</button>
+              <button type="button" id="votdListen" class="mini-btn">▶ Listen</button>
+              <button type="button" id="votdCopy" class="mini-btn">Copy</button>
+            </div>
+          </div>
+
+          <div class="lbl" style="margin-top:16px;"><span>Quick access</span></div>
+          <div class="home-grid">
+            ${[['books', 'Books'], ['search', 'Search'], ['study', 'Study'], ['journal', 'Journal'], ['ask', 'Ask AI'],
+              ['plans', 'Plans'], ['saved', 'Saved'], ['notes', 'Notes'], ['voice', 'Voices']]
+              .map(([k, l]) => `<button type="button" class="home-tile" data-act="${k}">${icon(k)}<span>${l}</span></button>`).join('')}
+          </div>
+
+          <div class="lbl" style="margin-top:16px;"><span>Your progress</span></div>
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;">
+              <span>Chapters studied</span><span style="color:var(--accent-hi);">${studiedCount} / ${TOTAL_CHAPTERS}</span>
+            </div>
+            <div class="plan-prog-bar"><div class="plan-prog-fill" style="width:${Math.max(studiedCount ? 1 : 0, pct)}%"></div></div>
+            <div id="homePlans"></div>
+          </div>
+
+          ${histKeys.length ? `<div class="lbl" style="margin-top:16px;"><span>Recently read</span></div>
+          <div class="hub-recent">${histKeys.map((k) => {
+            const [b, c] = k.split('|');
+            return `<button type="button" class="color-chip home-hist" data-book="${esc(b)}" data-ch="${esc(c)}">${esc(b)} ${esc(c)}</button>`;
+          }).join('')}</div>` : ''}
+
+          <div id="homeRecentStudies"></div>
+        `;
+
+        // Reading plans progress + next step
+        const plansEl = $('homePlans');
+        READING_PLANS.forEach((plan) => {
+          const done = plan.steps.filter((s) => state.planDone[s.id]).length;
+          const next = plan.steps.find((s) => !state.planDone[s.id]);
+          const row = document.createElement('div');
+          row.className = 'plan-step';
+          row.innerHTML = `<span style="min-width:0;"><strong>${esc(plan.title)}</strong> <span style="color:var(--muted);font-size:12px;">${done}/${plan.steps.length}</span></span>`;
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'mini-btn' + (next ? ' is-acc' : '');
+          b.textContent = next ? `${next.book === 'Psalms' ? 'Psalm' : next.book} ${next.chapter}` : 'Done ✓';
+          if (next) b.addEventListener('click', () => goChapter(next.book, next.chapter));
+          row.appendChild(b);
+          plansEl.appendChild(row);
+        });
+
+        // Recent AI studies
+        const recIds = Object.keys(studyCache).sort((a, b) => (studyCache[b].at || 0) - (studyCache[a].at || 0)).slice(0, 5);
+        if (recIds.length) {
+          const host = $('homeRecentStudies');
+          host.innerHTML = '<div class="lbl" style="margin-top:16px;"><span>Recent studies</span></div>';
+          recIds.forEach((id) => {
+            const c = studyCache[id];
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = 'card';
+            card.style.cssText = 'width:100%;text-align:left;margin-bottom:6px;font-size:13px;font-weight:700;color:var(--accent-hi);';
+            card.textContent = c.title;
+            card.addEventListener('click', () => openSavedStudy(id));
+            host.appendChild(card);
+          });
+        }
+
+        // Events
+        $('homeContinue').addEventListener('click', showReader);
+        el.querySelectorAll('.home-hist').forEach((b) => b.addEventListener('click', () => goChapter(b.dataset.book, parseInt(b.dataset.ch, 10))));
+        el.querySelectorAll('.home-tile').forEach((b) => b.addEventListener('click', () => homeAction(b.dataset.act)));
+
+        // Verse of the day
+        const ref = todaysRef();
+        let votd = { ref, text: '' };
+        loadVerseOfDay().then((v) => {
+          votd = v;
+          const t = $('votdText');
+          if (t) t.innerHTML = (v.text ? `“${esc(v.text)}”` : '<span style="color:var(--muted)">Open to read today\'s verse.</span>') +
+            `<div class="home-votd-ref">${esc(v.ref.replace(/^Psalms /, 'Psalm '))} (${state.translation.toUpperCase()})</div>`;
+        });
+        $('votdOpen').addEventListener('click', () => {
+          const p = parseRef(ref);
+          if (p) goChapter(p.book, p.chapter, { targetVerse: p.verse });
+        });
+        $('votdListen').addEventListener('click', () => {
+          if (votd.text) speakLongText('votd', `${votd.ref.replace(/^Psalms /, 'Psalm ')}.`, `Verse of the Day • ${votd.ref}`, votd.text);
+        });
+        $('votdCopy').addEventListener('click', () => {
+          if (votd.text) toast(copyText(`"${votd.text}" — ${votd.ref} (${state.translation.toUpperCase()})`) ? 'Copied verse' : 'Copy unavailable');
+        });
+      }
+
+      function openSavedStudy(id) {
+        const c = studyCache[id];
+        if (!c) return;
+        const tabFor = { guide: 'guide', topic: 'topic', person: 'person', word: 'word', ask: 'ask' };
+        const tab = tabFor[c.type] || 'topic';
+        const open = () => {
+          hubCurrent[tab] = id;
+          hubState[id] = { status: 'ready', text: c.text };
+          openStudyHub(tab);
+        };
+        if (c.type === 'guide') {
+          // guide:<translation>|<Book>|<chapter>|<depth>
+          const parts = id.slice(6).split('|');
+          guideDepth = parts[3] || 'full';
+          showReader();
+          loadChapter(parts[1], parseInt(parts[2], 10)).then(open);
+        } else {
+          open();
+        }
+      }
+
+      function homeAction(act) {
+        if (act === 'books') { renderBookList(); openModal('bookModal'); }
+        else if (act === 'search') {
+          showReader();
+          $('searchDrawer').classList.remove('hidden');
+          $('btnToggleSearch').classList.add('is-active');
+          window.scrollTo({ top: 0 });
+          setTimeout(() => { if ($('jumpInput')) $('jumpInput').focus(); }, 50);
+        }
+        else if (act === 'study') openStudyHub('guide');
+        else if (act === 'journal') openStudyHub('journal');
+        else if (act === 'ask') openStudyHub('ask');
+        else if (act === 'plans') openStudyTabModal('plans');
+        else if (act === 'saved') openStudyTabModal('saved');
+        else if (act === 'notes') openStudyTabModal('notes');
+        else if (act === 'voice') { populateVoices(); syncVoiceControls(); openModal('voiceModal'); }
+      }
+
+      /* -----------------------------------------------------------------------
          5. CHAPTER FETCHING, LIVE WORD FILTER & VERSE STUDY TOOLS
          ----------------------------------------------------------------------- */
       function setBanner(msg) {
@@ -3279,6 +3553,9 @@
         const meta = bookMeta(bookName);
         state.book = meta.name;
         state.chapter = Math.max(1, Math.min(meta.ch, parseInt(chNum, 10) || 1));
+        const histKey = `${state.book}|${state.chapter}`;
+        state.history = [histKey].concat((state.history || []).filter((k) => k !== histKey)).slice(0, 12);
+        if (homeVisible) showReader();
         selectedVerse = opts.targetVerse || null;
         editingNoteVerse = null;
         chapterFilter = '';
@@ -3343,6 +3620,7 @@
           } else {
             verses = [];
             renderVerses();
+            updateAudioUI();
             setBanner(`Could not load ${state.book} ${state.chapter} offline. Built-in chapters: Genesis 1, Psalms 23, Proverbs 3, John 1, John 3, Romans 8.`);
           }
         }
@@ -3800,6 +4078,9 @@
         $('btnGetGoogleVoices').addEventListener('click', () => {
           if (window.AndroidBridge && window.AndroidBridge.openPlayStore) window.AndroidBridge.openPlayStore('com.google.android.tts');
         });
+
+        // Home
+        $('btnHome').addEventListener('click', () => { if (homeVisible) showReader(); else showHome(); });
 
         // Study centre
         $('btnStudyHub').addEventListener('click', () => openStudyHub());
