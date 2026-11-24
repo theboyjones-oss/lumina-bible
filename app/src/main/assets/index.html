@@ -1412,6 +1412,40 @@
     </div>
   </div>
 
+  <!-- =========================================================================
+       RESET PROGRESS CONFIRMATION (#resetModal)
+       ========================================================================= -->
+  <div id="resetModal" class="modal-backdrop hidden" role="alertdialog" aria-modal="true" aria-labelledby="resetTitle" aria-describedby="resetDesc">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2 id="resetTitle" style="color:var(--err-text);">Reset your progress?</h2>
+        <button id="btnCloseReset" type="button" class="close-btn" aria-label="Cancel">&times;</button>
+      </div>
+      <div class="modal-body" id="resetDesc">
+        <div class="diag-status is-err" style="font-size:13px;">
+          <strong>This permanently clears:</strong>
+          <ul style="margin:6px 0 0;padding-left:18px;line-height:1.6;">
+            <li><span id="resetStudiedCount">0</span> chapters marked as studied</li>
+            <li><span id="resetPlanCount">0</span> reading-plan days ticked off</li>
+            <li>Your recently read chapters</li>
+          </ul>
+        </div>
+        <div class="diag-status" style="font-size:13px;">
+          <strong style="color:var(--text);">Kept safe:</strong> notes, highlights, bookmarks, journal entries, saved AI studies and settings.
+        </div>
+        <button id="btnResetBackup" type="button" class="seg-btn">Save a backup first (Export JSON)</button>
+        <label for="chkResetConfirm" class="toggle-row">
+          <span>I understand this can't be undone</span>
+          <input id="chkResetConfirm" type="checkbox" />
+        </label>
+      </div>
+      <div class="modal-foot" style="gap:8px;">
+        <button id="btnCancelReset" type="button" class="mini-btn" style="padding:9px 16px;">Cancel</button>
+        <button id="btnConfirmReset" type="button" class="primary-btn" style="background-color:var(--err-text);" disabled>Reset progress</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Non-Blocking Toast Banner -->
   <div id="toastBox" class="toast-box hidden" aria-live="polite"></div>
 
@@ -3203,6 +3237,9 @@
             </div>
             <div class="plan-prog-bar"><div class="plan-prog-fill" style="width:${Math.max(studiedCount ? 1 : 0, pct)}%"></div></div>
             <div id="homePlans"></div>
+            <div style="display:flex;justify-content:flex-end;margin-top:10px;">
+              <button type="button" id="btnResetProgress" class="mini-btn is-danger">Reset progress…</button>
+            </div>
           </div>
 
           ${histKeys.length ? `<div class="lbl" style="margin-top:16px;"><span>Recently read</span></div>
@@ -3252,6 +3289,7 @@
 
         // Events
         $('homeContinue').addEventListener('click', showReader);
+        $('btnResetProgress').addEventListener('click', openResetProgress);
         el.querySelectorAll('.home-hist').forEach((b) => b.addEventListener('click', () => goChapter(b.dataset.book, parseInt(b.dataset.ch, 10))));
         el.querySelectorAll('.home-tile').forEach((b) => b.addEventListener('click', () => homeAction(b.dataset.act)));
 
@@ -3274,6 +3312,25 @@
         $('votdCopy').addEventListener('click', () => {
           if (votd.text) toast(copyText(`"${votd.text}" — ${votd.ref} (${state.translation.toUpperCase()})`) ? 'Copied verse' : 'Copy unavailable');
         });
+      }
+
+      function openResetProgress() {
+        $('resetStudiedCount').textContent = String(Object.keys(state.studied || {}).length);
+        $('resetPlanCount').textContent = String(Object.keys(state.planDone || {}).length);
+        $('chkResetConfirm').checked = false;
+        $('btnConfirmReset').disabled = true;
+        openModal('resetModal');
+      }
+
+      function confirmResetProgress() {
+        if (!$('chkResetConfirm').checked) return;
+        state.studied = {};
+        state.planDone = {};
+        state.history = [];
+        saveState();
+        closeAllModals();
+        if (homeVisible) renderHome();
+        toast('Progress reset. Your notes, highlights and journal are unchanged.');
       }
 
       function openSavedStudy(id) {
@@ -3674,7 +3731,7 @@
          6. THREE CENTERED MODALS, THEMES, SAVED, NOTES & READING PLANS
          ----------------------------------------------------------------------- */
       function closeAllModals() {
-        ['bookModal', 'voiceModal', 'studyModal', 'hubModal'].forEach((id) => {
+        ['bookModal', 'voiceModal', 'studyModal', 'hubModal', 'resetModal'].forEach((id) => {
           const el = $(id);
           if (el) el.classList.add('hidden');
         });
@@ -4123,6 +4180,13 @@
           if (window.AndroidBridge && window.AndroidBridge.openPlayStore) window.AndroidBridge.openPlayStore('com.google.android.tts');
         });
 
+        // Reset progress (confirmation required)
+        $('chkResetConfirm').addEventListener('change', (e) => { $('btnConfirmReset').disabled = !e.target.checked; });
+        $('btnConfirmReset').addEventListener('click', confirmResetProgress);
+        $('btnCancelReset').addEventListener('click', closeAllModals);
+        $('btnCloseReset').addEventListener('click', closeAllModals);
+        $('btnResetBackup').addEventListener('click', () => $('btnExportJson').click());
+
         // Home
         $('btnHome').addEventListener('click', () => { if (homeVisible) showReader(); else showHome(); });
 
@@ -4257,7 +4321,7 @@
         });
 
         // Modal Backdrop & Escape Dismissal
-        ['bookModal', 'voiceModal', 'studyModal', 'hubModal'].forEach((id) => {
+        ['bookModal', 'voiceModal', 'studyModal', 'hubModal', 'resetModal'].forEach((id) => {
           const el = $(id);
           if (el) {
             el.addEventListener('click', (e) => {
