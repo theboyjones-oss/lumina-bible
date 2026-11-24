@@ -1181,10 +1181,7 @@
           <select id="selVoice" class="ctrl-select" style="width:100%;">
             <option value="">Auto — best English voice</option>
           </select>
-          <div class="grid-2" style="margin-top:8px;">
-            <button id="btnPreviewVoice" type="button" class="seg-btn">&#9654; Preview</button>
-            <button id="btnMoreVoices" type="button" class="seg-btn">More voices&hellip;</button>
-          </div>
+          <button id="btnPreviewVoice" type="button" class="seg-btn" style="width:100%;margin-top:8px;">&#9654; Preview this voice</button>
         </div>
 
         <div class="grid-2">
@@ -1225,6 +1222,19 @@
         </label>
 
         <div class="diag-box">
+          <div class="lbl" style="margin-bottom:0;"><span>Download Voices</span></div>
+          <div style="font-size:12px;line-height:1.5;color:var(--muted);">
+            Download voices to use them offline and get more accents:
+            <ol style="margin:6px 0 0;padding-left:18px;">
+              <li>Tap <strong style="color:var(--text)">Open Google voice downloads</strong>.</li>
+              <li>Choose <strong style="color:var(--text)">English (United Kingdom)</strong> (or another accent) and tap the download icon.</li>
+              <li>Come back here — new voices appear in the list automatically.</li>
+            </ol>
+          </div>
+          <div class="grid-2">
+            <button id="btnMoreVoices" type="button" class="mini-btn is-acc">Open Google voice downloads</button>
+            <button id="btnTtsSettings" type="button" class="mini-btn">Phone speech settings</button>
+          </div>
           <div id="voiceDiagStatus" class="diag-status">Loading voices…</div>
           <button id="btnGetGoogleVoices" type="button" class="mini-btn is-acc hidden">Get Speech Services by Google</button>
         </div>
@@ -1865,11 +1875,12 @@
           if (!info.ready) {
             setDiagStatus('Starting speech engine…');
           } else if (!count) {
-            setDiagStatus('No English voices installed yet. Tap "More voices…" and install English (UK) voice data.', 'err');
+            setDiagStatus('No English voices installed yet. Tap "Open Google voice downloads" and download English (United Kingdom).', 'err');
           } else if (!isGoogle) {
             setDiagStatus(`Using ${info.label || 'your phone\'s speech engine'} (${count} English voices). For the most natural reading, install Speech Services by Google and set it as the preferred engine.`);
           } else {
-            setDiagStatus(`Speech Services by Google • ${count} English voices${hd ? ` (${hd} HD)` : ''}. Tip: "More voices…" → Install voice data → English (UK) to download extra voices for offline use.`, 'ok');
+            const offline = voiceList.filter((v) => v.localService).length;
+            setDiagStatus(`Speech Services by Google • ${count} English voices ready${hd ? ` (${hd} HD)` : ''} • ${offline} ${offline === 1 ? 'works' : 'work'} offline. Voices marked "Online" need internet; download a voice pack above to use them anywhere.`, 'ok');
           }
         } else {
           if (getBtn) getBtn.classList.add('hidden');
@@ -3778,6 +3789,10 @@
           saveState();
         });
         $('btnPreviewVoice').addEventListener('click', previewVoice);
+        $('btnTtsSettings').addEventListener('click', () => {
+          if (window.AndroidBridge && window.AndroidBridge.openSystemTtsSettings) window.AndroidBridge.openSystemTtsSettings();
+          else toast('Open your system text-to-speech settings to manage voices.');
+        });
         $('btnMoreVoices').addEventListener('click', () => {
           if (window.AndroidBridge && window.AndroidBridge.openVoiceSettings) window.AndroidBridge.openVoiceSettings();
           else toast('Add voices in your system speech / text-to-speech settings.');

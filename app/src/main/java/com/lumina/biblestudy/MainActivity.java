@@ -295,14 +295,21 @@ public class MainActivity extends ComponentActivity {
         @JavascriptInterface
         public void openVoiceSettings() {
             runOnUiThread(() -> {
-                // Prefer the engine's own "install voice data" screen, then system TTS settings
+                // Google's own "Install voice data" screen (voice packs per language)
                 Intent install = new Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
-                String engine = tts != null ? tts.getDefaultEngine() : null;
-                if (engine != null) install.setPackage(engine);
+                install.setPackage("com.google.android.tts");
                 if (tryStart(install)) return;
-                if (tryStart(new Intent("com.android.settings.TTS_SETTINGS"))) return;
-                tryStart(new Intent(android.provider.Settings.ACTION_SETTINGS));
+                Intent any = new Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
+                String engine = tts != null ? tts.getDefaultEngine() : null;
+                if (engine != null) any.setPackage(engine);
+                if (tryStart(any)) return;
+                openTts();
             });
+        }
+
+        @JavascriptInterface
+        public void openSystemTtsSettings() {
+            runOnUiThread(MainActivity.this::openTts);
         }
 
         @JavascriptInterface
@@ -331,6 +338,21 @@ public class MainActivity extends ComponentActivity {
         }
     }
 
+    // Phone's Text-to-speech settings (engine choice, speed, voice data)
+    private void openTts() {
+        if (tryStart(new Intent("com.android.settings.TTS_SETTINGS"))) return;
+        if (tryStart(new Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))) {
+            jsToast("Open Text-to-speech output, then the gear next to Speech Services by Google");
+            return;
+        }
+        tryStart(new Intent(android.provider.Settings.ACTION_SETTINGS));
+        jsToast("Search Settings for \"Text-to-speech\"");
+    }
+
+    private void jsToast(String msg) {
+        Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+    }
+
     private boolean tryStart(Intent i) {
         try {
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -351,6 +373,13 @@ public class MainActivity extends ComponentActivity {
         WindowInsetsControllerCompat c = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
         c.setAppearanceLightStatusBars(light);
         c.setAppearanceLightNavigationBars(light);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Voices may have been downloaded while the user was in Android's settings
+        if (ttsReady) emit("", "voices", "");
     }
 
     @Override
