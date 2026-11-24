@@ -977,6 +977,22 @@
     .home-tile span { color: var(--text); }
     .home-tile:hover { background-color: var(--hover); border-color: var(--accent-line); }
 
+    /* Roomier top bar & search (overrides) */
+    .topbar .pill-btn { height: 42px; border-radius: 12px; }
+    .topbar .icon-btn { width: 42px; }
+    .topbar .ctrl-select { height: 42px; border-radius: 12px; padding: 0 8px; }
+    .topbar .right-controls { gap: 8px; }
+    .topbar .brand-group { flex: 1 1 auto; min-width: 0; }
+    #btnBookPicker { min-width: 0; flex-shrink: 1; }
+    .search-btn { padding: 0 14px; gap: 7px; font-size: 14px; flex-shrink: 0; }
+    @media (max-width: 440px) { .search-lbl { display: none; } .search-btn { width: 50px; padding: 0; } .search-btn svg { width: 22px; height: 22px; } }
+    .search-drawer { gap: 10px; padding-top: 10px; padding-bottom: 4px; }
+    .search-drawer .search-row { gap: 8px; }
+    .search-drawer .text-input { height: 46px; font-size: 15px; padding: 0 14px; border-radius: 12px; }
+    .search-drawer .go-btn { height: 46px; padding: 0 20px; font-size: 15px; border-radius: 12px; }
+    .search-drawer .mini-btn { height: 46px !important; padding: 0 14px; font-size: 14px; border-radius: 12px; }
+    .search-drawer .filter-meta { font-size: 13px; }
+
     .toast-box {
       position: fixed;
       bottom: 118px;
@@ -1023,11 +1039,12 @@
             <option value="asv">ASV</option>
             <option value="bbe">BBE</option>
           </select>
-          <button id="btnToggleSearch" type="button" class="pill-btn icon-btn" title="Search &amp; Jump" aria-label="Search and Jump">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <button id="btnToggleSearch" type="button" class="pill-btn search-btn" title="Search &amp; Jump" aria-label="Search and Jump">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
               <circle cx="11" cy="11" r="7"/>
               <path stroke-linecap="round" d="M20 20l-3.5-3.5"/>
             </svg>
+            <span class="search-lbl">Search</span>
           </button>
           <button id="btnAppearance" type="button" class="pill-btn aa-btn" aria-label="Appearance and Study">Aa</button>
         </div>
@@ -1036,11 +1053,11 @@
       <!-- Collapsible Quick Reference Jump & In-Chapter Word Filter -->
       <div id="searchDrawer" class="search-drawer hidden">
         <form id="jumpForm" class="search-row">
-          <input id="jumpInput" type="text" class="text-input" placeholder="Jump to ref (e.g. John 3:16, Ps 23, Rom 8, Gen 1)..." aria-label="Jump to reference" />
+          <input id="jumpInput" type="text" class="text-input" placeholder="Go to verse, e.g. John 3:16" aria-label="Jump to reference" />
           <button type="submit" class="go-btn">Go</button>
         </form>
         <div class="search-row">
-          <input id="chapterSearchInput" type="text" class="text-input" placeholder="Filter words or phrases in this chapter..." aria-label="Filter in current chapter" />
+          <input id="chapterSearchInput" type="text" class="text-input" placeholder="Find words in this chapter" aria-label="Filter in current chapter" />
           <button id="btnClearFilter" type="button" class="mini-btn hidden" style="height:36px;">Clear</button>
         </div>
         <div id="filterMeta" class="filter-meta hidden"></div>
@@ -3516,10 +3533,30 @@
         });
       }
 
+      // Compact book names for the top bar (full name stays in the chapter heading)
+      const SHORT_BOOKS = {
+        'Genesis': 'Gen', 'Exodus': 'Exod', 'Leviticus': 'Lev', 'Numbers': 'Num', 'Deuteronomy': 'Deut',
+        'Joshua': 'Josh', 'Judges': 'Judg', '1 Samuel': '1 Sam', '2 Samuel': '2 Sam', '1 Kings': '1 Kgs', '2 Kings': '2 Kgs',
+        '1 Chronicles': '1 Chr', '2 Chronicles': '2 Chr', 'Nehemiah': 'Neh', 'Esther': 'Esth', 'Psalms': 'Psalm',
+        'Proverbs': 'Prov', 'Ecclesiastes': 'Eccl', 'Song of Solomon': 'Song', 'Isaiah': 'Isa', 'Jeremiah': 'Jer',
+        'Lamentations': 'Lam', 'Ezekiel': 'Ezek', 'Daniel': 'Dan', 'Obadiah': 'Obad', 'Habakkuk': 'Hab',
+        'Zephaniah': 'Zeph', 'Haggai': 'Hag', 'Zechariah': 'Zech', 'Malachi': 'Mal', 'Matthew': 'Matt',
+        'Romans': 'Rom', '1 Corinthians': '1 Cor', '2 Corinthians': '2 Cor', 'Galatians': 'Gal', 'Ephesians': 'Eph',
+        'Philippians': 'Phil', 'Colossians': 'Col', '1 Thessalonians': '1 Thess', '2 Thessalonians': '2 Thess',
+        '1 Timothy': '1 Tim', '2 Timothy': '2 Tim', 'Philemon': 'Phlm', 'Hebrews': 'Heb', 'James': 'Jas',
+        '1 Peter': '1 Pet', '2 Peter': '2 Pet', 'Revelation': 'Rev'
+      };
+      function shortBookName(name) {
+        return SHORT_BOOKS[name] || name;
+      }
+
       function updateHeaderUI() {
         const meta = bookMeta(state.book);
         const title = `${state.book} ${state.chapter}`;
-        if ($('hdrChapter')) $('hdrChapter').textContent = title;
+        if ($('hdrChapter')) {
+          $('hdrChapter').textContent = `${shortBookName(state.book)} ${state.chapter}`;
+          $('btnBookPicker').setAttribute('aria-label', `Choose book and chapter (currently ${title})`);
+        }
         if ($('chapterTitle')) $('chapterTitle').textContent = title;
         if ($('badgeTestament')) $('badgeTestament').textContent = meta.t === 'OT' ? 'Old Testament' : 'New Testament';
         if ($('badgeTrans')) $('badgeTrans').textContent = state.translation.toUpperCase();
