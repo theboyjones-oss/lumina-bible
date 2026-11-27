@@ -994,6 +994,26 @@
     .search-drawer .mini-btn { height: 46px !important; padding: 0 14px; font-size: 14px; border-radius: 12px; }
     .search-drawer .filter-meta { font-size: 13px; }
 
+    /* Lumina Pro */
+    .pro-badge {
+      display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: 0.06em;
+      padding: 3px 8px; border-radius: 999px; vertical-align: middle; margin-left: 6px;
+      background-color: var(--elev); border: 1px solid var(--border-hi); color: var(--muted);
+    }
+    .pro-badge.on { background: linear-gradient(90deg, #f59e0b, #14b8a6); border-color: transparent; color: #fff; }
+    .pro-banner {
+      width: 100%; text-align: left; display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; margin-bottom: 10px; border-radius: 12px; font-size: 12px; line-height: 1.4;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.14), var(--accent-soft));
+      border: 1px solid rgba(245, 158, 11, 0.45); color: var(--text);
+    }
+    .pro-banner b { color: #f59e0b; }
+    .pro-icon { font-size: 44px; text-align: center; margin: 2px 0 4px; }
+    .pro-list { display: grid; gap: 8px; }
+    .pro-list div { background-color: var(--elev); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; font-size: 14px; font-weight: 700; }
+    .pro-list span { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+    .home-pro { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
     .toast-box {
       position: fixed;
       bottom: 118px;
@@ -1442,6 +1462,45 @@
       <div class="modal-foot" style="gap:8px;">
         <button id="btnCancelReset" type="button" class="mini-btn" style="padding:9px 16px;">Cancel</button>
         <button id="btnConfirmReset" type="button" class="primary-btn" style="background-color:var(--err-text);" disabled>Reset progress</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       LUMINA PRO PAYWALL (#proModal)
+       ========================================================================= -->
+  <div id="proModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="proTitle">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2 id="proTitle">Lumina Pro</h2>
+        <button id="btnCloseProX" type="button" class="close-btn" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="proBody" style="display:flex;flex-direction:column;gap:12px;">
+          <div class="pro-icon">✨</div>
+          <p id="proLead" class="mean-note" style="text-align:center;margin:0;">Go deeper in your Bible study.</p>
+          <div class="pro-list">
+            <div>📖 Full &amp; In-depth chapter guides<span>Background, outline, word studies, interpretations, questions and prayer</span></div>
+            <div>🔎 Topic, People &amp; Word studies<span>Any theme, Bible character or Hebrew/Greek word</span></div>
+            <div>💬 Ask about any chapter<span>Your questions answered, with tappable references</span></div>
+            <div>✨ Unlimited verse Meanings<span>Free includes 3 a day</span></div>
+          </div>
+          <p class="mean-note" style="text-align:center;margin:0;">Reading, listening, notes, highlights, plans and your journal are always free.</p>
+          <button id="btnProBuy" type="button" class="primary-btn" style="width:100%;padding:13px;font-size:15px;">Unlock Pro · £4.99</button>
+          <div style="text-align:center;font-size:12px;color:var(--muted);margin-top:-4px;">One payment. No subscription.</div>
+          <div style="display:flex;justify-content:center;gap:18px;">
+            <button id="btnProRestore" type="button" class="mini-btn">Restore purchase</button>
+            <button id="btnProLater" type="button" class="mini-btn">Maybe later</button>
+          </div>
+        </div>
+        <div id="proBuyInfo" class="hidden" style="display:flex;flex-direction:column;gap:12px;">
+          <div class="diag-status" style="font-size:13px;line-height:1.55;">
+            <strong style="color:var(--text);">Test version</strong><br>
+            Payments aren't switched on yet. They arrive with the Google Play version.<br><br>
+            To try Pro now, open <strong style="color:var(--text);">Home</strong> and tap the <strong style="color:var(--text);">version line</strong> at the bottom <strong style="color:var(--text);">7 times</strong>. Do the same again to go back to Free.
+          </div>
+          <button id="btnProInfoOk" type="button" class="primary-btn">OK</button>
+        </div>
       </div>
     </div>
   </div>
@@ -2157,6 +2216,84 @@
       }
 
       /* -----------------------------------------------------------------------
+         4a. LUMINA PRO — Stage 1: free / Pro split with a hidden test switch
+             (tap the version line on Home 7 times). Real payments arrive with
+             the Google Play version (Play Billing).
+             Always free: reading, listening, notes, highlights, bookmarks,
+             plans, journal, Verse of the Day, Quick chapter guide, 3 Meanings/day.
+         ----------------------------------------------------------------------- */
+      const PRO_KEY = 'lumina_pro_v1';
+      const QUOTA_KEY = 'lumina_meaning_quota_v1';
+      const Pro = {
+        PRICE: '£4.99',
+        FREE_MEANINGS_PER_DAY: 3,
+        get on() { return safeGet(PRO_KEY) === '1'; },
+        set(v) { safeSet(PRO_KEY, v ? '1' : '0'); },
+        today() {
+          const d = new Date();
+          return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+        },
+        used() {
+          try {
+            const q = JSON.parse(safeGet(QUOTA_KEY) || 'null');
+            if (q && q.d === this.today()) return q.n || 0;
+          } catch (e) {}
+          return 0;
+        },
+        meaningsLeft() { return Math.max(0, this.FREE_MEANINGS_PER_DAY - this.used()); },
+        countMeaning() {
+          if (this.on) return;
+          safeSet(QUOTA_KEY, JSON.stringify({ d: this.today(), n: this.used() + 1 }));
+        },
+        canMeaning() { return this.on || this.meaningsLeft() > 0; },
+        canStudy(type, id) { return this.on || (type === 'guide' && /\|quick$/.test(id)); },
+        badge() {
+          return this.on ? '<span class="pro-badge on">PRO</span>' : '<span class="pro-badge">FREE</span>';
+        },
+        lock(label) { return this.on ? label : `${label} 🔒`; },
+        sheet(reason) {
+          const lead = {
+            meaning: `You've used today's ${this.FREE_MEANINGS_PER_DAY} free Meanings. They reset at midnight, or unlock unlimited Meanings with Pro.`,
+            guide: 'Full and In-depth chapter guides are part of Lumina Pro. The Quick guide stays free.',
+            topic: 'Topic studies are part of Lumina Pro.',
+            person: 'People studies are part of Lumina Pro.',
+            word: 'Word studies are part of Lumina Pro.',
+            ask: 'Asking questions about a chapter is part of Lumina Pro.'
+          }[reason] || 'Go deeper in your Bible study.';
+          $('proLead').textContent = lead;
+          $('proBuyInfo').classList.add('hidden');
+          $('proBody').classList.remove('hidden');
+          $('btnProBuy').textContent = `Unlock Pro · ${this.PRICE}`;
+          openModal('proModal');
+        },
+        buy() {
+          // Stage 1: payments aren't connected yet (they need the Google Play version)
+          $('proBody').classList.add('hidden');
+          $('proBuyInfo').classList.remove('hidden');
+        },
+        refreshAll() {
+          if (homeVisible) renderHome();
+          renderVerses();
+          if (!$('hubModal').classList.contains('hidden')) renderHub();
+        }
+      };
+
+      let verTaps = 0;
+      let verLast = 0;
+      function versionTap() {
+        const now = Date.now();
+        verTaps = now - verLast < 1500 ? verTaps + 1 : 1;
+        verLast = now;
+        if (verTaps >= 3 && verTaps < 7) toast(`${7 - verTaps} more tap${7 - verTaps > 1 ? 's' : ''}…`);
+        if (verTaps >= 7) {
+          verTaps = 0;
+          Pro.set(!Pro.on);
+          toast(Pro.on ? '🧪 Test mode: Pro ON' : '🧪 Test mode: back to Free');
+          Pro.refreshAll();
+        }
+      }
+
+      /* -----------------------------------------------------------------------
          4b. AI VERSE MEANINGS — read aloud with device voices
              Default: free keyless AI (Pollinations.ai, ~1 reply / 45s per connection)
              Optional: user's own Gemini key (higher quality), stored only on this device.
@@ -2289,6 +2426,11 @@
           refreshMeaningPanel(k);
           return;
         }
+        if (!Pro.canMeaning()) {
+          meaningState[k] = { status: 'locked' };
+          refreshMeaningPanel(k);
+          return;
+        }
         meaningState[k] = { status: 'loading' };
         refreshMeaningPanel(k);
         const prompt = meaningPrompt(v);
@@ -2296,6 +2438,7 @@
         const done = (text) => {
           meaningCache[cid] = text;
           saveMeaningCache();
+          Pro.countMeaning();
           meaningState[k] = { status: 'ready', text };
           refreshMeaningPanel(k);
         };
@@ -2317,6 +2460,7 @@
             meaningModelIdx = idx;
             meaningCache[cid] = text;
             saveMeaningCache();
+            Pro.countMeaning();
             meaningState[k] = { status: 'ready', text };
             break;
           } catch (err) {
@@ -2417,7 +2561,7 @@
         } else {
           openMeanings.add(k);
           const ms = meaningState[k];
-          if (!ms || ms.status === 'error') loadMeaning(v, k, false);
+          if (!ms || ms.status === 'error' || ms.status === 'locked') loadMeaning(v, k, false);
         }
         renderVerses();
       }
@@ -2485,6 +2629,19 @@
           return box;
         }
 
+        if (ms.status === 'locked') {
+          const d = document.createElement('div');
+          d.innerHTML = `<p class="mean-note">You've used today's ${Pro.FREE_MEANINGS_PER_DAY} free Meanings. Meanings you've already opened stay free to read, and new ones reset at midnight.</p>`;
+          const up = document.createElement('button');
+          up.type = 'button';
+          up.className = 'mini-btn is-acc';
+          up.textContent = '✨ Unlimited Meanings with Pro';
+          up.addEventListener('click', () => Pro.sheet('meaning'));
+          d.appendChild(up);
+          box.appendChild(d);
+          return box;
+        }
+
         if (ms.status === 'error') {
           const d = document.createElement('div');
           d.innerHTML = `<p class="mean-note" style="color:var(--err-text);">${esc(ms.err || 'Something went wrong.')}</p>`;
@@ -2524,6 +2681,7 @@
         regen.textContent = 'New version';
         regen.addEventListener('click', () => {
           if (discSpeakingKey === k) stopAudio();
+          if (!Pro.canMeaning()) { Pro.sheet('meaning'); return; }
           loadMeaning(v, k, true);
         });
         actions.appendChild(listen);
@@ -2538,7 +2696,8 @@
 
         const foot = document.createElement('div');
         foot.className = 'mean-foot';
-        foot.textContent = 'AI-generated discussion — weigh it against Scripture and trusted teaching.';
+        foot.textContent = 'AI-generated discussion — weigh it against Scripture and trusted teaching.' +
+          (Pro.on ? '' : ` • Free Meanings left today: ${Pro.meaningsLeft()} of ${Pro.FREE_MEANINGS_PER_DAY}`);
         box.appendChild(foot);
         return box;
       }
@@ -2691,6 +2850,10 @@
           renderHubResult();
           return;
         }
+        if (!Pro.canStudy(type, id)) {
+          Pro.sheet(type);
+          return;
+        }
         if (hubState[id] && hubState[id].status === 'loading') { renderHubResult(); return; }
         if (discSpeakingKey === 'study:' + id) stopAudio();
         hubState[id] = { status: 'loading' };
@@ -2828,7 +2991,7 @@
         const go = document.createElement('button');
         go.type = 'submit';
         go.className = 'go-btn';
-        go.textContent = 'Study';
+        go.textContent = Pro.lock('Study');
         row.appendChild(inp);
         row.appendChild(go);
         const start = (val) => {
@@ -2883,7 +3046,7 @@
 
         const depth = document.createElement('div');
         depth.className = 'grid-3';
-        [['quick', 'Quick'], ['full', 'Full'], ['deep', 'In-depth']].forEach(([val, lbl]) => {
+        [['quick', 'Quick'], ['full', Pro.lock('Full')], ['deep', Pro.lock('In-depth')]].forEach(([val, lbl]) => {
           const b = document.createElement('button');
           b.type = 'button';
           b.className = 'seg-btn' + (guideDepth === val ? ' is-active' : '');
@@ -2898,7 +3061,8 @@
         gen.type = 'button';
         gen.className = 'primary-btn';
         gen.style.cssText = 'width:100%;margin-top:8px;';
-        gen.textContent = studyCache[id] ? 'Open saved study guide' : `Create ${guideDepth === 'deep' ? 'in-depth' : guideDepth} study guide`;
+        gen.textContent = studyCache[id] ? 'Open saved study guide'
+          : (guideDepth === 'quick' ? 'Create quick study guide' : Pro.lock(`Create ${guideDepth === 'deep' ? 'in-depth' : guideDepth} study guide`));
         gen.addEventListener('click', () => runStudy('guide', id, `${state.book} ${state.chapter} study guide (${guideDepth})`, 'guide', guidePrompt(guideDepth), false));
         panel.appendChild(gen);
         if (studyCache[id] && !hubCurrent.guide) hubCurrent.guide = id;
@@ -3026,7 +3190,7 @@
         go.type = 'button';
         go.className = 'primary-btn';
         go.style.cssText = 'width:100%;margin-top:8px;';
-        go.textContent = 'Ask';
+        go.textContent = Pro.lock('Ask');
         go.addEventListener('click', () => {
           const q = ta.value.trim();
           if (!q) return;
@@ -3075,6 +3239,14 @@
         const host = $('hubPanel');
         if (!host) return;
         host.innerHTML = '';
+        if (!Pro.on && hubTab !== 'journal') {
+          const bn = document.createElement('button');
+          bn.type = 'button';
+          bn.className = 'pro-banner';
+          bn.innerHTML = '<span style="font-size:20px;">✨</span><span><b>Lumina Pro</b> — full &amp; in-depth guides, Topic, People and Word studies, Ask, and unlimited Meanings. <u>See Pro</u></span>';
+          bn.addEventListener('click', () => Pro.sheet('hub'));
+          host.appendChild(bn);
+        }
         if (hubTab === 'guide') host.appendChild(guideTab());
         else if (hubTab === 'journal') host.appendChild(journalTab());
         else if (hubTab === 'ask') host.appendChild(askTab());
@@ -3083,7 +3255,7 @@
         res.id = 'hubResult';
         host.appendChild(res);
         if (hubTab !== 'journal') renderHubResult();
-        if ($('hubTitle')) $('hubTitle').textContent = `Bible Study • ${state.book} ${state.chapter}`;
+        if ($('hubTitle')) $('hubTitle').innerHTML = `Bible Study • ${esc(state.book)} ${state.chapter}${Pro.badge()}`;
       }
 
       function openStudyHub(tab) {
@@ -3250,7 +3422,14 @@
 
           <div id="homeRecentStudies"></div>
 
-          <div class="home-version">Lumina Bible${appVersion() ? ' • Version ' + esc(appVersion()) : ''}</div>
+          <div class="card home-pro" style="margin-top:16px;">
+            <div style="font-size:13px;">${Pro.on
+              ? '<strong>Lumina Pro</strong>' + Pro.badge() + '<div class="small" style="font-size:12px;color:var(--muted);margin-top:2px;">Every study tool is unlocked. Thank you!</div>'
+              : '<strong>Lumina Pro</strong>' + Pro.badge() + `<div style="font-size:12px;color:var(--muted);margin-top:2px;">Deeper studies and unlimited Meanings · ${Pro.PRICE} once</div>`}</div>
+            ${Pro.on ? '' : '<button type="button" id="btnHomePro" class="mini-btn is-acc" style="flex-shrink:0;">See Pro</button>'}
+          </div>
+
+          <div id="homeVersion" class="home-version" style="user-select:none;">Lumina Bible${appVersion() ? ' • Version ' + esc(appVersion()) : ''}${Pro.on ? ' • Pro' : ''}</div>
         `;
 
         // Reading plans progress + next step
@@ -3290,6 +3469,8 @@
         // Events
         $('homeContinue').addEventListener('click', showReader);
         $('btnResetProgress').addEventListener('click', openResetProgress);
+        $('homeVersion').addEventListener('click', versionTap);
+        if ($('btnHomePro')) $('btnHomePro').addEventListener('click', () => Pro.sheet('home'));
         el.querySelectorAll('.home-hist').forEach((b) => b.addEventListener('click', () => goChapter(b.dataset.book, parseInt(b.dataset.ch, 10))));
         el.querySelectorAll('.home-tile').forEach((b) => b.addEventListener('click', () => homeAction(b.dataset.act)));
 
@@ -3731,7 +3912,7 @@
          6. THREE CENTERED MODALS, THEMES, SAVED, NOTES & READING PLANS
          ----------------------------------------------------------------------- */
       function closeAllModals() {
-        ['bookModal', 'voiceModal', 'studyModal', 'hubModal', 'resetModal'].forEach((id) => {
+        ['bookModal', 'voiceModal', 'studyModal', 'hubModal', 'resetModal', 'proModal'].forEach((id) => {
           const el = $(id);
           if (el) el.classList.add('hidden');
         });
@@ -4180,6 +4361,13 @@
           if (window.AndroidBridge && window.AndroidBridge.openPlayStore) window.AndroidBridge.openPlayStore('com.google.android.tts');
         });
 
+        // Lumina Pro paywall
+        $('btnProBuy').addEventListener('click', () => Pro.buy());
+        $('btnProRestore').addEventListener('click', () => Pro.buy());
+        $('btnProLater').addEventListener('click', closeAllModals);
+        $('btnCloseProX').addEventListener('click', closeAllModals);
+        $('btnProInfoOk').addEventListener('click', closeAllModals);
+
         // Reset progress (confirmation required)
         $('chkResetConfirm').addEventListener('change', (e) => { $('btnConfirmReset').disabled = !e.target.checked; });
         $('btnConfirmReset').addEventListener('click', confirmResetProgress);
@@ -4321,7 +4509,7 @@
         });
 
         // Modal Backdrop & Escape Dismissal
-        ['bookModal', 'voiceModal', 'studyModal', 'hubModal', 'resetModal'].forEach((id) => {
+        ['bookModal', 'voiceModal', 'studyModal', 'hubModal', 'resetModal', 'proModal'].forEach((id) => {
           const el = $(id);
           if (el) {
             el.addEventListener('click', (e) => {
